@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_employee_form_fitzone" model="ir.ui.view">
+        <field name="name">hr.employee.form.fitzone</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='job_title']" position="after">
+                <field name="fitzone_registration_number"/>
+                <field name="fitzone_specialty"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_employee_filter_fitzone" model="ir.ui.view">
+        <field name="name">hr.employee.search.fitzone</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='job_id']" position="after">
+                <field name="fitzone_specialty"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_employee_tree_fitzone" model="ir.ui.view">
+        <field name="name">hr.employee.list.fitzone</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='job_id']" position="after">
+                <field name="fitzone_registration_number" optional="show"/>
+                <field name="fitzone_specialty" optional="show"/>
+            </xpath>
+            <xpath expr="//field[@name='department_id']" position="after">
+                <field name="resource_calendar_id" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
