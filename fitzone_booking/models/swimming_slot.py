@@ -5,12 +5,6 @@ class FitZoneSwimmingSlot(models.Model):
     _name = 'fitzone.swimming.slot'
     _description = 'FitZone Swimming Slot'
 
-    appointment_id = fields.Many2one(
-        'fitzone.appointment',
-        string='Appointment',
-        required=True
-    )
-
     name = fields.Char(
         string='Name',
         required=True
@@ -34,11 +28,3 @@ class FitZoneSwimmingSlot(models.Model):
         'hr.employee',
         string='Created By'
     )
-
-    _sql_constraints = [
-        (
-            'appointment_unique',
-            'unique(appointment_id)',
-            'Each appointment can be linked to only one swimming slot.'
-        ),
-    ]

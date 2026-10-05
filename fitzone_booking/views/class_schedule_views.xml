@@ -7,7 +7,6 @@
         <field name="arch" type="xml">
             <list>
                 <field name="class_id"/>
-                <field name="appointment_id"/>
             </list>
         </field>
     </record>
@@ -20,7 +19,6 @@
                 <sheet>
                     <group>
                         <field name="class_id"/>
-                        <field name="appointment_id"/>
                     </group>
                 </sheet>
             </form>
@@ -34,9 +32,10 @@
     </record>
 
     <menuitem
-        id="menu_fitzone_class_schedule"
-        name="Class Schedules"
-        action="action_fitzone_class_schedule"
+    id="menu_fitzone_class_schedule"
+    name="Class Schedules"
+    parent="menu_fitzone_root"
+    action="action_fitzone_class_schedule"
     />
 
 </odoo>

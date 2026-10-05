@@ -9,7 +9,6 @@
                 <field name="name"/>
                 <field name="slot_type"/>
                 <field name="price"/>
-                <field name="appointment_id"/>
                 <field name="created_by"/>
             </list>
         </field>
@@ -25,7 +24,6 @@
                         <field name="name"/>
                         <field name="slot_type"/>
                         <field name="price"/>
-                        <field name="appointment_id"/>
                         <field name="created_by"/>
                     </group>
                 </sheet>
@@ -40,9 +38,10 @@
     </record>
 
     <menuitem
-        id="menu_fitzone_swimming_slot"
-        name="Swimming Slots"
-        action="action_fitzone_swimming_slot"
+    id="menu_fitzone_swimming_slot"
+    name="Swimming Slots"
+    parent="menu_fitzone_root"
+    action="action_fitzone_swimming_slot"
     />
 
 </odoo>

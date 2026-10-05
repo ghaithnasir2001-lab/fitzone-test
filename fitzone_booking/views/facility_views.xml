@@ -39,9 +39,16 @@
     </record>
 
     <menuitem
-        id="menu_fitzone_facility"
-        name="Facilities"
-        action="action_fitzone_facility"
+    id="menu_fitzone_root"
+    name="FitZone"
+    action="action_fitzone_facility"
+    />
+
+    <menuitem
+    id="menu_fitzone_facility"
+    name="Facilities"
+    parent="menu_fitzone_root"
+    action="action_fitzone_facility"
     />
 
 </odoo>
