@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_fitzone_facility,access_fitzone_facility,fitzone_booking.model_fitzone_facility,base.group_user,1,1,1,1
+access_fitzone_class,access_fitzone_class,fitzone_booking.model_fitzone_class,base.group_user,1,1,1,1
+access_fitzone_class_schedule,access_fitzone_class_schedule,fitzone_booking.model_fitzone_class_schedule,base.group_user,1,1,1,1
+access_fitzone_swimming_slot,access_fitzone_swimming_slot,fitzone_booking.model_fitzone_swimming_slot,base.group_user,1,1,1,1

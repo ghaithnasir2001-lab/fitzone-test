@@ -13,6 +13,7 @@
         'hr',
     ],
     'data': [
+        'security/ir.model.access.csv',
         'views/facility_views.xml',
         'views/class_views.xml',
         'views/class_schedule_views.xml',

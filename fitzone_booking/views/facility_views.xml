@@ -41,7 +41,6 @@
     <menuitem
     id="menu_fitzone_root"
     name="FitZone"
-    action="action_fitzone_facility"
     />
 
     <menuitem
