@@ -39,10 +39,10 @@
     </record>
 
     <menuitem
-    id="menu_fitzone_class"
-    name="Classes"
-    parent="menu_fitzone_root"
-    action="action_fitzone_class"
+        id="menu_fitzone_class"
+        name="Classes"
+        parent="menu_fitzone_classes_facilities"
+        action="action_fitzone_class"
     />
 
 </odoo>

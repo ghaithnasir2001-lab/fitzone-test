@@ -32,10 +32,10 @@
     </record>
 
     <menuitem
-    id="menu_fitzone_class_schedule"
-    name="Class Schedules"
-    parent="menu_fitzone_root"
-    action="action_fitzone_class_schedule"
+        id="menu_fitzone_class_schedule"
+        name="Class Schedules"
+        parent="menu_fitzone_classes_facilities"
+        action="action_fitzone_class_schedule"
     />
 
 </odoo>
