@@ -18,8 +18,14 @@ class FitZoneFacility(models.Model):
         string='Capacity'
     )
 
-    state = fields.Char(
-        string='State'
+    state = fields.Selection(
+        [
+            ('available', 'Available'),
+            ('maintenance', 'Maintenance'),
+            ('closed', 'Closed'),
+        ],
+        string='State',
+        default='available'
     )
 
     description = fields.Text(
