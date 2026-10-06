@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Membership Package List View -->
+    <record id="view_fitzone_membership_package_list" model="ir.ui.view">
+        <field name="name">fitzone.membership.package.list</field>
+        <field name="model">fitzone.membership.package</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="package_type"/>
+                <field name="duration_months"/>
+                <field name="price"/>
+                <field name="freeze_days"/>
+                <field name="included_pt_sessions"/>
+                <field name="included_physio_sessions_per_month"/>
+                <field name="included_nutrition_consultations"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Membership Package Form View -->
+    <record id="view_fitzone_membership_package_form" model="ir.ui.view">
+        <field name="name">fitzone.membership.package.form</field>
+        <field name="model">fitzone.membership.package</field>
+        <field name="arch" type="xml">
+            <form string="Membership Package">
+
+                <sheet>
+
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="package_type"/>
+                            <field name="duration_months"/>
+                            <field name="price"/>
+                            <field name="currency_id"/>
+                        </group>
+
+                        <group>
+                            <field name="freeze_days"/>
+                            <field name="included_pt_sessions"/>
+                            <field name="included_physio_sessions_per_month"/>
+                            <field name="included_nutrition_consultations"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Included Services">
+                            <field name="description"
+                                   placeholder="Describe the services included in this package..."/>
+                        </page>
+                    </notebook>
+
+                </sheet>
+
+            </form>
+        </field>
+    </record>
+
+    <!-- Membership Package Action -->
+    <record id="action_fitzone_membership_packages" model="ir.actions.act_window">
+        <field name="name">Membership Packages</field>
+        <field name="res_model">fitzone.membership.package</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- FitZone Management Main Menu -->
+    <menuitem
+        id="menu_fitzone_root"
+        name="FitZone Management"
+        sequence="10"
+    />
+
+    <!-- Membership Menu -->
+    <menuitem
+        id="menu_fitzone_membership_root"
+        name="Membership"
+        parent="menu_fitzone_root"
+        sequence="20"
+    />
+
+    <!-- Membership Packages -->
+    <menuitem
+        id="menu_fitzone_membership_packages"
+        name="Membership Packages"
+        parent="menu_fitzone_membership_root"
+        action="action_fitzone_membership_packages"
+        sequence="10"
+    />
+
+</odoo>

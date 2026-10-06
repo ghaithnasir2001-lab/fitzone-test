@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_fitzone_membership_package,access_fitzone_membership_package,fitzone_management.model_fitzone_membership_package,base.group_user,1,1,1,1
+access_fitzone_membership_subscription,access_fitzone_membership_subscription,fitzone_management.model_fitzone_membership_subscription,base.group_user,1,1,1,1
+access_fitzone_membership_freeze,access_fitzone_membership_freeze,fitzone_management.model_fitzone_membership_freeze,base.group_user,1,1,1,1

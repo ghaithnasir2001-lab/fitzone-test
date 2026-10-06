@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Freeze Request List View -->
+    <record id="view_fitzone_membership_freeze_list" model="ir.ui.view">
+        <field name="name">fitzone.membership.freeze.list</field>
+        <field name="model">fitzone.membership.freeze</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="subscription_id"/>
+                <field name="subscriber_id"/>
+                <field name="request_date"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="freeze_days"/>
+                <field name="status"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Freeze Request Form View -->
+    <record id="view_fitzone_membership_freeze_form" model="ir.ui.view">
+        <field name="name">fitzone.membership.freeze.form</field>
+        <field name="model">fitzone.membership.freeze</field>
+        <field name="arch" type="xml">
+            <form string="Membership Freeze">
+                <header>
+                    <button
+                        name="action_apply_freeze"
+                        type="object"
+                        string="Apply Freeze"
+                        class="btn-primary"
+                        invisible="status != 'draft'"
+                    />
+                </header>
+                <sheet>
+
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="subscription_id"/>
+                            <field name="subscriber_id"/>
+                            <field name="request_date"/>
+                        </group>
+
+                        <group>
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                            <field name="freeze_days"/>
+                            <field name="status"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+
+                        <page string="Notes">
+                            <field name="notes"
+                                   placeholder="Add freeze notes..."/>
+                        </page>
+
+                    </notebook>
+
+                </sheet>
+
+            </form>
+        </field>
+    </record>
+
+    <!-- Freeze Request Action -->
+    <record id="action_fitzone_membership_freezes" model="ir.actions.act_window">
+        <field name="name">Freeze Requests</field>
+        <field name="res_model">fitzone.membership.freeze</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Freeze Requests Menu -->
+    <menuitem
+        id="menu_fitzone_membership_freezes"
+        name="Freeze Requests"
+        parent="menu_fitzone_membership_root"
+        action="action_fitzone_membership_freezes"
+        sequence="30"
+    />
+
+</odoo>

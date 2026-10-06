@@ -8,7 +8,12 @@
     """,
     'depends': ['base', 'hr'],
     'data': [
+        'security/ir.model.access.csv',
+        'data/membership_sequence.xml',
         'views/hr_employee_views.xml',
+        'views/membership_package_views.xml',
+        'views/membership_subscription_views.xml',
+        'views/membership_freeze_views.xml',
     ],
     'installable': True,
     'application': True,
