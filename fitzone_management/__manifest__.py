@@ -18,6 +18,7 @@
         'views/class_schedule_views.xml',
         'views/swimming_slot_views.xml',
         'views/hr_employee_views.xml',
+        'views/booking_views.xml',
     ],
     'installable': True,
     'application': True,
