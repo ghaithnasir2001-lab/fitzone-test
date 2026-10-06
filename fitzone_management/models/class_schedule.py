@@ -1,4 +1,5 @@
-from odoo import fields, models
+from odoo import api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class FitZoneClassSchedule(models.Model):
@@ -16,3 +17,26 @@ class FitZoneClassSchedule(models.Model):
         string='Facility',
         required=True
     )
+
+    start_datetime = fields.Datetime(
+        string='Start Date & Time',
+        required=True
+    )
+
+    end_datetime = fields.Datetime(
+        string='End Date & Time',
+        required=True
+    )
+
+    active = fields.Boolean(
+        string='Active',
+        default=True
+    )
+
+    @api.constrains('start_datetime', 'end_datetime')
+    def _check_datetime_range(self):
+        for record in self:
+            if record.start_datetime >= record.end_datetime:
+                raise ValidationError(
+                    'End Date & Time must be later than Start Date & Time.'
+                )
