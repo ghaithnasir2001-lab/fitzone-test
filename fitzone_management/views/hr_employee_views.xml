@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_employee_form_fitzone" model="ir.ui.view">
+        <field name="name">hr.employee.form.fitzone</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='job_title']" position="after">
+                <field name="fitzone_registration_number"/>
+                <field name="fitzone_staff_type"/>
+                <field name="fitzone_specialty"/>
+                <field name="resource_calendar_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_employee_filter_fitzone" model="ir.ui.view">
+        <field name="name">hr.employee.search.fitzone</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='job_id']" position="after">
+                <field name="fitzone_staff_type"/>
+                <field name="fitzone_specialty"/>
+                <field name="resource_calendar_id"/>
+            </xpath>
+
+            <xpath expr="//filter[@name='my_team']" position="after">
+                <filter
+                    name="filter_fitzone_trainer"
+                    string="Trainer"
+                    domain="[('fitzone_staff_type', '=', 'trainer')]"
+                />
+                <filter
+                    name="filter_fitzone_physiotherapist"
+                    string="Physiotherapist"
+                    domain="[('fitzone_staff_type', '=', 'physiotherapist')]"
+                />
+                <filter
+                    name="filter_fitzone_nutritionist"
+                    string="Nutritionist"
+                    domain="[('fitzone_staff_type', '=', 'nutritionist')]"
+                />
+                <filter
+                    name="filter_fitzone_receptionist"
+                    string="Receptionist"
+                    domain="[('fitzone_staff_type', '=', 'receptionist')]"
+                />
+                <filter
+                    name="filter_fitzone_sales"
+                    string="Sales"
+                    domain="[('fitzone_staff_type', '=', 'sales')]"
+                />
+                <filter
+                    name="filter_fitzone_management"
+                    string="Management"
+                    domain="[('fitzone_staff_type', '=', 'management')]"
+                />
+                <filter
+                    name="filter_fitzone_specialty_set"
+                    string="Has Specialty"
+                    domain="[('fitzone_specialty', '!=', False)]"
+                />
+                <filter
+                    name="filter_fitzone_working_hours_set"
+                    string="Has Working Hours"
+                    domain="[('resource_calendar_id', '!=', False)]"
+                />
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_employee_tree_fitzone" model="ir.ui.view">
+        <field name="name">hr.employee.list.fitzone</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='job_id']" position="after">
+                <field name="fitzone_registration_number" optional="show"/>
+                <field name="fitzone_staff_type" optional="show"/>
+                <field name="fitzone_specialty" optional="show"/>
+            </xpath>
+            <xpath expr="//field[@name='department_id']" position="after">
+                <field name="resource_calendar_id" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
