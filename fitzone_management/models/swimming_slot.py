@@ -11,6 +11,16 @@ class FitZoneSwimmingSlot(models.Model):
         required=True
     )
 
+    start_time = fields.Float(
+        string='Start Time',
+        required=True
+    )
+
+    end_time = fields.Float(
+        string='End Time',
+        required=True
+    )
+
     slot_type = fields.Selection(
         [
             ('free', 'Free'),
@@ -36,4 +46,12 @@ class FitZoneSwimmingSlot(models.Model):
             if record.price < 0:
                 raise ValidationError(
                     'Swimming slot price cannot be negative.'
+                )
+
+    @api.constrains('start_time', 'end_time')
+    def _check_time_range(self):
+        for record in self:
+            if record.start_time >= record.end_time:
+                raise ValidationError(
+                    'Start Time must be earlier than End Time.'
                 )

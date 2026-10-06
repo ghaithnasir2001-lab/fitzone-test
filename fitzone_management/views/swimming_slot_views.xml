@@ -8,6 +8,8 @@
             <list>
                 <field name="name"/>
                 <field name="slot_type"/>
+                <field name="start_time"/>
+                <field name="end_time"/>
                 <field name="price"/>
                 <field name="created_by"/>
             </list>
@@ -23,6 +25,8 @@
                     <group>
                         <field name="name"/>
                         <field name="slot_type"/>
+                        <field name="start_time"/>
+                        <field name="end_time"/>
                         <field name="price"/>
                         <field name="created_by"/>
                     </group>

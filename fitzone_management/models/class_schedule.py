@@ -10,3 +10,9 @@ class FitZoneClassSchedule(models.Model):
         string='Class',
         required=True
     )
+
+    facility_id = fields.Many2one(
+        'fitzone.facility',
+        string='Facility',
+        required=True
+    )
