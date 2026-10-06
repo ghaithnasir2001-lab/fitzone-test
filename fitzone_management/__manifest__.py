@@ -6,8 +6,10 @@
     'description': """
         FitZone gym management system.
     """,
-    'depends': ['base'],
-    'data': [],
+    'depends': ['base', 'hr'],
+    'data': [
+        'views/hr_employee_views.xml',
+    ],
     'installable': True,
     'application': True,
     'license': 'LGPL-3',
