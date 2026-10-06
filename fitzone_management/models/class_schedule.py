@@ -12,6 +12,12 @@ class FitZoneClassSchedule(models.Model):
         required=True
     )
 
+    class_type = fields.Selection(
+        related='class_id.class_type',
+        string='Class Type',
+        store=False
+    )
+
     facility_id = fields.Many2one(
         'fitzone.facility',
         string='Facility',
@@ -39,4 +45,23 @@ class FitZoneClassSchedule(models.Model):
             if record.start_datetime >= record.end_datetime:
                 raise ValidationError(
                     'End Date & Time must be later than Start Date & Time.'
+                )
+
+    @api.constrains(
+        'facility_id',
+        'start_datetime',
+        'end_datetime'
+    )
+    def _check_facility_schedule_overlap(self):
+        for record in self:
+            overlapping_schedule = self.search([
+                ('id', '!=', record.id),
+                ('facility_id', '=', record.facility_id.id),
+                ('start_datetime', '<', record.end_datetime),
+                ('end_datetime', '>', record.start_datetime),
+            ], limit=1)
+
+            if overlapping_schedule:
+                raise ValidationError(
+                    'A facility cannot have overlapping class schedules.'
                 )

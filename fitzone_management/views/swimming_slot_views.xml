@@ -7,9 +7,10 @@
         <field name="arch" type="xml">
             <list>
                 <field name="name"/>
+                <field name="facility_id"/>
                 <field name="slot_type"/>
-                <field name="start_time"/>
-                <field name="end_time"/>
+                <field name="start_datetime"/>
+                <field name="end_datetime"/>
                 <field name="price"/>
                 <field name="created_by"/>
             </list>
@@ -24,9 +25,10 @@
                 <sheet>
                     <group>
                         <field name="name"/>
+                        <field name="facility_id"/>
                         <field name="slot_type"/>
-                        <field name="start_time"/>
-                        <field name="end_time"/>
+                        <field name="start_datetime"/>
+                        <field name="end_datetime"/>
                         <field name="price"/>
                         <field name="created_by"/>
                     </group>

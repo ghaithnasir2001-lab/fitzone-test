@@ -11,13 +11,20 @@ class FitZoneSwimmingSlot(models.Model):
         required=True
     )
 
-    start_time = fields.Float(
-        string='Start Time',
+    facility_id = fields.Many2one(
+        'fitzone.facility',
+        string='Facility',
+        required=True,
+        domain=[('facility_type', '=', 'swimming')]
+    )
+
+    start_datetime = fields.Datetime(
+        string='Start Date & Time',
         required=True
     )
 
-    end_time = fields.Float(
-        string='End Time',
+    end_datetime = fields.Datetime(
+        string='End Date & Time',
         required=True
     )
 
@@ -48,10 +55,29 @@ class FitZoneSwimmingSlot(models.Model):
                     'Swimming slot price cannot be negative.'
                 )
 
-    @api.constrains('start_time', 'end_time')
-    def _check_time_range(self):
+    @api.constrains('start_datetime', 'end_datetime')
+    def _check_datetime_range(self):
         for record in self:
-            if record.start_time >= record.end_time:
+            if record.start_datetime >= record.end_datetime:
                 raise ValidationError(
-                    'Start Time must be earlier than End Time.'
+                    'End Date & Time must be later than Start Date & Time.'
+                )
+
+    @api.constrains(
+        'facility_id',
+        'start_datetime',
+        'end_datetime'
+    )
+    def _check_slot_overlap(self):
+        for record in self:
+            overlapping_slot = self.search([
+                ('id', '!=', record.id),
+                ('facility_id', '=', record.facility_id.id),
+                ('start_datetime', '<', record.end_datetime),
+                ('end_datetime', '>', record.start_datetime),
+            ], limit=1)
+
+            if overlapping_slot:
+                raise ValidationError(
+                    'This swimming slot overlaps with an existing slot in the same facility.'
                 )
