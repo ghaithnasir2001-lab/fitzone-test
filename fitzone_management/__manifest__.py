@@ -6,9 +6,20 @@
     'description': """
         FitZone gym management system.
     """,
-    'depends': ['base'],
-    'data': [],
+    'depends': [
+        'base',
+        'product',
+        'hr',
+    ],
+    'data': [
+        'security/ir.model.access.csv',
+        'views/facility_views.xml',
+        'views/class_views.xml',
+        'views/class_schedule_views.xml',
+        'views/swimming_slot_views.xml',
+    ],
     'installable': True,
     'application': True,
     'license': 'LGPL-3',
+    'author': 'FitZone Team',
 }
