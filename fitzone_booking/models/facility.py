@@ -1,4 +1,5 @@
-from odoo import fields, models
+from odoo import api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class FitZoneFacility(models.Model):
@@ -10,8 +11,14 @@ class FitZoneFacility(models.Model):
         required=True
     )
 
-    facility_type = fields.Char(
-        string='Facility Type'
+    facility_type = fields.Selection(
+    [
+        ('yoga', 'Yoga'),
+        ('pilates', 'Pilates'),
+        ('crossfit', 'CrossFit'),
+        ('swimming', 'Swimming'),
+    ],
+    string='Facility Type'
     )
 
     capacity = fields.Integer(
@@ -31,3 +38,11 @@ class FitZoneFacility(models.Model):
     description = fields.Text(
         string='Description'
     )
+
+    @api.constrains('capacity')
+    def _check_capacity(self):
+        for record in self:
+            if record.capacity < 0:
+                raise ValidationError(
+                    'Facility capacity cannot be negative.'
+                )

@@ -16,9 +16,15 @@ class FitZoneClass(models.Model):
         required=True
     )
 
-    class_type = fields.Char(
-        string='Class Type',
-        required=True
+    class_type = fields.Selection(
+    [
+        ('yoga', 'Yoga'),
+        ('pilates', 'Pilates'),
+        ('crossfit', 'CrossFit'),
+        ('swimming', 'Swimming'),
+    ],
+    string='Class Type',
+    required=True
     )
 
     description = fields.Text(

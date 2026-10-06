@@ -1,4 +1,5 @@
-from odoo import fields, models
+from odoo import api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class FitZoneSwimmingSlot(models.Model):
@@ -28,3 +29,11 @@ class FitZoneSwimmingSlot(models.Model):
         'hr.employee',
         string='Created By'
     )
+
+    @api.constrains('price')
+    def _check_price(self):
+        for record in self:
+            if record.price < 0:
+                raise ValidationError(
+                    'Swimming slot price cannot be negative.'
+                )
