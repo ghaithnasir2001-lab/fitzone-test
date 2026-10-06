@@ -7,7 +7,9 @@
         FitZone gym management system.
     """,
     'depends': ['base'],
-    'data': [],
+    'data': [
+    'views/subscriber_views.xml',
+    ],
     'installable': True,
     'application': True,
     'license': 'LGPL-3',
