@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_fitzone_facility_list" model="ir.ui.view">
+        <field name="name">fitzone.facility.list</field>
+        <field name="model">fitzone.facility</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="facility_type"/>
+                <field name="capacity"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_fitzone_facility_form" model="ir.ui.view">
+        <field name="name">fitzone.facility.form</field>
+        <field name="model">fitzone.facility</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="facility_type"/>
+                        <field name="capacity"/>
+                        <field name="state"/>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_fitzone_facility" model="ir.actions.act_window">
+        <field name="name">Facilities</field>
+        <field name="res_model">fitzone.facility</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem
+        id="menu_fitzone_root"
+        name="FitZone"
+    />
+
+    <menuitem
+        id="menu_fitzone_classes_facilities"
+        name="Classes &amp; Facilities"
+        parent="menu_fitzone_root"
+    />
+
+    <menuitem
+        id="menu_fitzone_facility"
+        name="Facilities"
+        parent="menu_fitzone_classes_facilities"
+        action="action_fitzone_facility"
+    />
+
+</odoo>
