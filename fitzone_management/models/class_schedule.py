@@ -29,7 +29,10 @@ class FitZoneClassSchedule(models.Model):
         'fitzone.facility',
         string='Facility',
         required=True,
-        domain=[('state', '=', 'available')]
+        domain=[
+            ('booking_method', '=', 'class_schedule'),
+            ('state', '=', 'available')
+        ]
     )
 
     start_datetime = fields.Datetime(
@@ -102,6 +105,11 @@ class FitZoneClassSchedule(models.Model):
     @api.constrains('facility_id')
     def _check_facility_availability(self):
         for record in self:
+            if record.facility_id.booking_method != 'class_schedule':
+                raise ValidationError(
+                    'A class schedule can only use a facility with Class Schedule booking.'
+                )
+
             if record.facility_id.state != 'available':
                 raise ValidationError(
                     'A class schedule can only use an available facility.'

@@ -17,7 +17,11 @@ class FitZoneSwimmingSlot(models.Model):
         'fitzone.facility',
         string='Facility',
         required=True,
-        domain=[('facility_type', '=', 'swimming')]
+        domain=[
+            ('facility_type', '=', 'swimming'),
+            ('booking_method', '=', 'swimming_slot'),
+            ('state', '=', 'available')
+        ]
     )
 
     start_datetime = fields.Datetime(
@@ -96,6 +100,19 @@ class FitZoneSwimmingSlot(models.Model):
             record.name = (
                 f'{slot_type} — {time_range}'
             )
+
+    @api.constrains('facility_id')
+    def _check_facility_booking_method(self):
+        for record in self:
+            if record.facility_id.booking_method != 'swimming_slot':
+                raise ValidationError(
+                    'A swimming slot can only use a facility with Swimming Slot booking.'
+                )
+
+            if record.facility_id.state != 'available':
+                raise ValidationError(
+                    'A swimming slot can only use an available facility.'
+                )
 
     @api.constrains('price')
     def _check_price(self):
