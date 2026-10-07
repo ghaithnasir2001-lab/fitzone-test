@@ -6,16 +6,30 @@
     'description': """
         FitZone gym management system.
     """,
-    'depends': ['base', 'hr'],
+    'depends': [
+        'base',
+        'product',
+        'hr',
+    ],
     'data': [
         'security/ir.model.access.csv',
+
+        # Membership & Subscription
         'data/membership_sequence.xml',
-        'views/hr_employee_views.xml',
         'views/membership_package_views.xml',
         'views/membership_subscription_views.xml',
         'views/membership_freeze_views.xml',
+
+        # FitZone Core / Subscriber / Facilities
+        'views/facility_views.xml',
+        'views/class_views.xml',
+        'views/class_schedule_views.xml',
+        'views/swimming_slot_views.xml',
+        'views/hr_employee_views.xml',
+        'views/subscriber_views.xml',
     ],
     'installable': True,
     'application': True,
     'license': 'LGPL-3',
+    'author': 'FitZone Team',
 }

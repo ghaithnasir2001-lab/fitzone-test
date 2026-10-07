@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_fitzone_class_schedule_search" model="ir.ui.view">
+        <field name="name">fitzone.class.schedule.search</field>
+        <field name="model">fitzone.class.schedule</field>
+        <field name="arch" type="xml">
+            <search>
+                <filter
+                    name="active"
+                    string="Active"
+                    domain="[('active', '=', True)]"
+                />
+                <filter
+                    name="inactive"
+                    string="Inactive"
+                    domain="[('active', '=', False)]"
+                />
+            </search>
+        </field>
+    </record>
+
+    <record id="view_fitzone_class_schedule_list" model="ir.ui.view">
+        <field name="name">fitzone.class.schedule.list</field>
+        <field name="model">fitzone.class.schedule</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="class_id"/>
+                <field name="facility_id"/>
+                <field name="start_datetime"/>
+                <field name="end_datetime"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_fitzone_class_schedule_form" model="ir.ui.view">
+        <field name="name">fitzone.class.schedule.form</field>
+        <field name="model">fitzone.class.schedule</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="class_id"/>
+                        <field name="facility_id"
+                               domain="[('facility_type', '=', class_type)]"/>
+                        <field name="start_datetime"/>
+                        <field name="end_datetime"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_fitzone_class_schedule" model="ir.actions.act_window">
+        <field name="name">Class Schedules</field>
+        <field name="res_model">fitzone.class.schedule</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem
+        id="menu_fitzone_class_schedule"
+        name="Class Schedules"
+        parent="menu_fitzone_classes_facilities"
+        action="action_fitzone_class_schedule"
+    />
+
+</odoo>
