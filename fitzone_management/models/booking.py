@@ -18,7 +18,6 @@ class FitZoneBooking(models.Model):
     booking_type = fields.Selection(
         [
             ('class', 'Class'),
-            ('facility', 'Facility'),
             ('swimming', 'Swimming'),
         ],
         string='Booking Type',
@@ -28,18 +27,6 @@ class FitZoneBooking(models.Model):
     class_id = fields.Many2one(
         'fitzone.class',
         string='Class'
-    )
-
-    facility_id = fields.Many2one(
-        'fitzone.facility',
-        string='Facility',
-        domain=[('booking_method', '=', 'direct')]
-    )
-
-    facility_booking_method = fields.Selection(
-        related='facility_id.booking_method',
-        string='Facility Booking Method',
-        readonly=True
     )
 
     class_schedule_id = fields.Many2one(
@@ -70,10 +57,18 @@ class FitZoneBooking(models.Model):
         required=True
     )
 
+    @api.onchange('booking_type')
+    def _onchange_booking_type(self):
+        if self.booking_type == 'class':
+            self.swimming_slot_id = False
+
+        elif self.booking_type == 'swimming':
+            self.class_id = False
+            self.class_schedule_id = False
+
     @api.constrains(
         'booking_type',
         'class_id',
-        'facility_id',
         'class_schedule_id',
         'swimming_slot_id'
     )
@@ -85,11 +80,6 @@ class FitZoneBooking(models.Model):
                 if not record.class_id or not record.class_schedule_id:
                     raise ValidationError(
                         'Class bookings must have a class and a class schedule.'
-                    )
-
-                if record.facility_id:
-                    raise ValidationError(
-                        'Class bookings cannot have a facility.'
                     )
 
                 if record.swimming_slot_id:
@@ -109,38 +99,6 @@ class FitZoneBooking(models.Model):
                         'The selected facility must use Class Schedule booking.'
                     )
 
-            elif record.booking_type == 'facility':
-
-                if not record.facility_id:
-                    raise ValidationError(
-                        'Facility bookings must have a facility.'
-                    )
-
-                if record.facility_id.booking_method != 'direct':
-                    raise ValidationError(
-                        'Facility bookings are only allowed for facilities using Direct Booking.'
-                    )
-
-                if record.class_id:
-                    raise ValidationError(
-                        'Facility bookings cannot have a class.'
-                    )
-
-                if record.class_schedule_id:
-                    raise ValidationError(
-                        'Facility bookings cannot have a class schedule.'
-                    )
-
-                if record.swimming_slot_id:
-                    raise ValidationError(
-                        'Facility bookings cannot have a swimming slot.'
-                    )
-
-                if record.facility_id.state != 'available':
-                    raise ValidationError(
-                        'This facility is not available for booking.'
-                    )
-
             elif record.booking_type == 'swimming':
 
                 if not record.swimming_slot_id:
@@ -151,12 +109,6 @@ class FitZoneBooking(models.Model):
                 if record.class_id:
                     raise ValidationError(
                         'Swimming bookings cannot have a class.'
-                    )
-
-                if record.facility_id:
-                    raise ValidationError(
-                        'Swimming bookings cannot have a facility directly. '
-                        'The facility is determined by the swimming slot.'
                     )
 
                 if record.class_schedule_id:
@@ -212,13 +164,9 @@ class FitZoneBooking(models.Model):
             if (
                 record.status == 'cancelled'
                 or record.booking_type != 'swimming'
+                or not record.swimming_slot_id
             ):
                 continue
-
-            if not record.swimming_slot_id:
-                raise ValidationError(
-                    'Swimming Slot is required for swimming bookings.'
-                )
 
             facility = record.swimming_slot_id.facility_id
 
@@ -327,19 +275,4 @@ class FitZoneBooking(models.Model):
                 if confirmed_bookings >= capacity:
                     raise ValidationError(
                         'This swimming slot is full. No more bookings can be confirmed.'
-                    )
-
-            elif record.booking_type == 'facility' and record.facility_id:
-                capacity = record.facility_id.capacity
-
-                confirmed_bookings = self.search_count([
-                    ('id', '!=', record.id),
-                    ('facility_id', '=', record.facility_id.id),
-                    ('booking_type', '=', 'facility'),
-                    ('status', '=', 'confirmed'),
-                ])
-
-                if confirmed_bookings >= capacity:
-                    raise ValidationError(
-                        'This facility is full. No more bookings can be confirmed.'
                     )

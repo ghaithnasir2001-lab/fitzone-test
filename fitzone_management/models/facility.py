@@ -23,13 +23,11 @@ class FitZoneFacility(models.Model):
 
     booking_method = fields.Selection(
         [
-            ('direct', 'Direct Booking'),
             ('class_schedule', 'Class Schedule'),
             ('swimming_slot', 'Swimming Slot'),
         ],
         string='Booking Method',
-        required=True,
-        default='direct'
+        required=True
     )
 
     capacity = fields.Integer(

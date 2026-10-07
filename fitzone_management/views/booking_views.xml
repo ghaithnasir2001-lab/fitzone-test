@@ -10,7 +10,6 @@
                 <field name="subscriber_id"/>
                 <field name="booking_type"/>
                 <field name="class_id"/>
-                <field name="facility_id"/>
                 <field name="class_schedule_id"/>
                 <field name="swimming_slot_id"/>
                 <field name="status"/>
@@ -33,17 +32,7 @@
                         <field
                             name="class_id"
                             invisible="booking_type != 'class'"
-                        />
-
-                        <field
-                            name="facility_id"
-                            invisible="booking_type != 'facility'"
-                            domain="[('booking_method', '=', 'direct')]"
-                        />
-
-                        <field
-                            name="facility_booking_method"
-                            invisible="1"
+                            required="booking_type == 'class'"
                         />
 
                         <field
