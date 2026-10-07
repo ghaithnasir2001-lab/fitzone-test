@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_fitzone_subscriber_search" model="ir.ui.view">
+        <field name="name">fitzone.subscriber.search</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="email"/>
+                <field name="phone"/>
+
+                <filter
+                    name="fitzone_subscriber"
+                    string="FitZone Subscribers"
+                    domain="[('is_fitzone_subscriber', '=', True)]"
+                />
+            </search>
+        </field>
+    </record>
+
+    <record id="view_fitzone_contact_form" model="ir.ui.view">
+        <field name="name">fitzone.contact.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+
+            <field name="parent_id" position="before">
+                <separator string="FitZone Information"/>
+                <field name="is_fitzone_subscriber"/>
+                <field name="subscriber_notes"/>
+            </field>
+
+        </field>
+    </record>
+
+    <record id="action_fitzone_subscribers" model="ir.actions.act_window">
+        <field name="name">Subscribers</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_fitzone_subscriber', '=', True)]</field>
+        <field name="context">{'default_is_fitzone_subscriber': True}</field>
+    </record>
+
+    <menuitem
+        id="menu_fitzone_subscribers"
+        name="Subscribers"
+        action="action_fitzone_subscribers"
+    />
+
+</odoo>

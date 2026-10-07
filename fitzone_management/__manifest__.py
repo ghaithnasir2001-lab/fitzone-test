@@ -19,6 +19,7 @@
         'views/swimming_slot_views.xml',
         'views/hr_employee_views.xml',
         'views/booking_views.xml',
+        'views/subscriber_views.xml',
     ],
     'installable': True,
     'application': True,
