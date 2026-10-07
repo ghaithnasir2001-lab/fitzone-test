@@ -43,8 +43,15 @@ class FitZoneMembershipFreeze(models.Model):
     )
 
     freeze_days = fields.Integer(
-        string='Freeze Days',
+        string='Requested Freeze Days',
         required=True,
+    )
+
+    actual_freeze_days = fields.Integer(
+        string='Actual Freeze Days',
+        default=0,
+        readonly=True,
+        copy=False,
     )
 
     end_date = fields.Date(
@@ -109,7 +116,11 @@ class FitZoneMembershipFreeze(models.Model):
             if not subscription:
                 continue
 
-            # Freeze cannot start before membership activation.
+            if subscription.status not in ('active', 'frozen'):
+                raise ValidationError(
+                    'Freeze can only be requested for an active membership.'
+                )
+
             if (
                 record.start_date
                 and subscription.activation_date
@@ -119,8 +130,6 @@ class FitZoneMembershipFreeze(models.Model):
                     'Freeze cannot start before the membership activation date.'
                 )
 
-            # Freeze can be used during the membership or within
-            # two months after the membership expiration.
             if (
                 record.start_date
                 and subscription.expiration_date
@@ -150,7 +159,7 @@ class FitZoneMembershipFreeze(models.Model):
             ])
 
             used_days = sum(
-                other_freezes.mapped('freeze_days')
+                other_freezes.mapped('actual_freeze_days')
             )
 
             if used_days + record.freeze_days > (
@@ -181,6 +190,11 @@ class FitZoneMembershipFreeze(models.Model):
                     'Membership subscription is required.'
                 )
 
+            if subscription.status != 'active':
+                raise ValidationError(
+                    'Only active memberships can be frozen.'
+                )
+
             if record.freeze_days > subscription.remaining_freeze_days:
                 raise ValidationError(
                     'Freeze days exceed the remaining freeze allowance.'
@@ -203,16 +217,48 @@ class FitZoneMembershipFreeze(models.Model):
                     'period or within two months after expiration.'
                 )
 
-            # Extend the membership by the number of frozen days.
             subscription.expiration_date = (
                 subscription.expiration_date
                 + relativedelta(days=record.freeze_days)
             )
 
-            subscription.used_freeze_days += record.freeze_days
-            subscription.status = 'frozen'
+            # Initially no days are considered permanently consumed.
+            # They are calculated when the freeze is resumed or completed.
+            record.actual_freeze_days = 0
 
+            subscription.status = 'frozen'
             record.status = 'active'
 
         return True
-        
+
+    @api.model
+    def _cron_complete_expired_freezes(self):
+        today = fields.Date.context_today(self)
+
+        expired_freezes = self.search([
+            ('status', '=', 'active'),
+            ('end_date', '<', today),
+        ])
+
+        for freeze in expired_freezes:
+            subscription = freeze.subscription_id
+
+            # The full requested freeze period was used.
+            freeze.actual_freeze_days = freeze.freeze_days
+            freeze.status = 'completed'
+
+            if subscription:
+                if subscription.status == 'frozen':
+                    subscription.used_freeze_days += (
+                        freeze.actual_freeze_days
+                    )
+
+                    if (
+                        subscription.expiration_date
+                        and subscription.expiration_date < today
+                    ):
+                        subscription.status = 'expired'
+                    else:
+                        subscription.status = 'active'
+
+        return True

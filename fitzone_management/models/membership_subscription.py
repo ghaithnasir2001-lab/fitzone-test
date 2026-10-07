@@ -186,7 +186,7 @@ class FitZoneMembershipSubscription(models.Model):
                     'fitzone.membership.subscription'
                 ) or 'New'
 
-            if vals.get('package_id') and not vals.get('price'):
+            if vals.get('package_id'):
                 package = self.env['fitzone.membership.package'].browse(
                     vals['package_id']
                 )
@@ -217,12 +217,185 @@ class FitZoneMembershipSubscription(models.Model):
                 vals['original_expiration_date'] = expiration_date
                 vals['expiration_date'] = expiration_date
 
-        return super().create(vals_list)
+        records = super().create(vals_list)
+
+        today = fields.Date.context_today(self)
+
+        for record in records:
+            if record.status in ('cancelled', 'renewed'):
+                continue
+
+            if record.activation_date and record.activation_date <= today:
+                record.status = 'active'
+            else:
+                record.status = 'draft'
+
+        return records
+
+    def write(self, vals):
+        result = super().write(vals)
+
+        if 'activation_date' in vals or 'expiration_date' in vals:
+            today = fields.Date.context_today(self)
+
+            for record in self:
+                if record.status in ('cancelled', 'renewed', 'frozen'):
+                    continue
+
+                if (
+                    record.expiration_date
+                    and record.expiration_date < today
+                ):
+                    record.status = 'expired'
+
+                elif (
+                    record.activation_date
+                    and record.activation_date <= today
+                ):
+                    record.status = 'active'
+
+                else:
+                    record.status = 'draft'
+        return result
+
+
+    @api.onchange(
+        'subscription_date',
+        'package_id',
+        'activation_date',
+    )
+    def _onchange_subscription_dates(self):
+        for record in self:
+            if not record.subscription_date:
+                continue
+
+            if not record.activation_date:
+                record.activation_date = record.subscription_date
+
+            if record.activation_date < record.subscription_date:
+                record.activation_date = (
+                    record._origin.activation_date
+                    or record.subscription_date
+                )
+
+                raise ValidationError(
+                    'Activation date cannot be before subscription date.'
+                )
+
+            if record.package_id:
+                record.price = record.package_id.price
+
+            if record.package_id and record.activation_date:
+                expiration_date = (
+                    record.activation_date
+                    + relativedelta(
+                        months=record.package_id.duration_months
+                    )
+                    - relativedelta(days=1)
+                )
+
+                record.original_expiration_date = expiration_date
+                record.expiration_date = expiration_date
+
+    @api.onchange(
+        'discount',
+        'used_freeze_days',
+        'used_pt_sessions',
+        'used_physio_sessions',
+        'used_nutrition_consultations',
+    )
+    def _onchange_non_negative_values(self):
+        for record in self:
+
+            if record.discount < 0:
+                record.discount = 0.0
+                raise ValidationError(
+                    'Discount cannot be negative.'
+                )
+
+            if record.used_freeze_days < 0:
+                record.used_freeze_days = 0
+                raise ValidationError(
+                    'Used freeze days cannot be negative.'
+                )
+
+            if record.used_freeze_days > record.allowed_freeze_days:
+                record.used_freeze_days = (
+                    record._origin.used_freeze_days
+                    if record._origin
+                    else 0
+                )
+
+                raise ValidationError(
+                    'Used freeze days cannot exceed the allowed freeze days.'
+                )
+
+            if record.used_pt_sessions < 0:
+                record.used_pt_sessions = 0
+                raise ValidationError(
+                    'Used PT sessions cannot be negative.'
+                )
+
+            if record.used_pt_sessions > record.included_pt_sessions:
+                record.used_pt_sessions = (
+                    record._origin.used_pt_sessions
+                    if record._origin
+                    else 0
+                )
+
+                raise ValidationError(
+                    'Used PT sessions cannot exceed included PT sessions.'
+                )
+
+            if record.used_physio_sessions < 0:
+                record.used_physio_sessions = 0
+                raise ValidationError(
+                    'Used physiotherapy sessions cannot be negative.'
+                )
+
+            if (
+                record.used_physio_sessions
+                > record.included_physio_sessions
+            ):
+                record.used_physio_sessions = (
+                    record._origin.used_physio_sessions
+                    if record._origin
+                    else 0
+                )
+
+                raise ValidationError(
+                    'Used physiotherapy sessions cannot exceed included '
+                    'physiotherapy sessions.'
+                )
+
+            if record.used_nutrition_consultations < 0:
+                record.used_nutrition_consultations = 0
+                raise ValidationError(
+                    'Used nutrition consultations cannot be negative.'
+                )
+
+            if (
+                record.used_nutrition_consultations
+                > record.included_nutrition_consultations
+            ):
+                record.used_nutrition_consultations = (
+                    record._origin.used_nutrition_consultations
+                    if record._origin
+                    else 0
+                )
+
+                raise ValidationError(
+                    'Used nutrition consultations cannot exceed included '
+                    'nutrition consultations.'
+                )
 
     @api.depends('price', 'discount')
     def _compute_final_price(self):
         for record in self:
-            record.final_price = max(record.price - record.discount, 0.0)
+            record.final_price = max(
+                record.price - record.discount,
+                0.0,
+            )
 
     @api.depends('allowed_freeze_days', 'used_freeze_days')
     def _compute_remaining_freeze_days(self):
@@ -313,16 +486,46 @@ class FitZoneMembershipSubscription(models.Model):
                 )
 
     @api.constrains(
+        'discount',
         'used_freeze_days',
-        'allowed_freeze_days',
+        'used_pt_sessions',
+        'used_physio_sessions',
+        'used_nutrition_consultations',
     )
-    def _check_freeze_days(self):
+    def _check_non_negative_values(self):
         for record in self:
+
+            if record.discount < 0:
+                raise ValidationError(
+                    'Discount cannot be negative.'
+                )
 
             if record.used_freeze_days < 0:
                 raise ValidationError(
                     'Used freeze days cannot be negative.'
                 )
+
+            if record.used_pt_sessions < 0:
+                raise ValidationError(
+                    'Used PT sessions cannot be negative.'
+                )
+
+            if record.used_physio_sessions < 0:
+                raise ValidationError(
+                    'Used physiotherapy sessions cannot be negative.'
+                )
+
+            if record.used_nutrition_consultations < 0:
+                raise ValidationError(
+                    'Used nutrition consultations cannot be negative.'
+                )
+
+    @api.constrains(
+        'used_freeze_days',
+        'allowed_freeze_days',
+    )
+    def _check_freeze_days(self):
+        for record in self:
 
             if record.used_freeze_days > record.allowed_freeze_days:
                 raise ValidationError(
@@ -340,19 +543,9 @@ class FitZoneMembershipSubscription(models.Model):
     def _check_used_services(self):
         for record in self:
 
-            if record.used_pt_sessions < 0:
-                raise ValidationError(
-                    'Used PT sessions cannot be negative.'
-                )
-
             if record.used_pt_sessions > record.included_pt_sessions:
                 raise ValidationError(
                     'Used PT sessions cannot exceed included PT sessions.'
-                )
-
-            if record.used_physio_sessions < 0:
-                raise ValidationError(
-                    'Used physiotherapy sessions cannot be negative.'
                 )
 
             if (
@@ -364,11 +557,6 @@ class FitZoneMembershipSubscription(models.Model):
                     'physiotherapy sessions.'
                 )
 
-            if record.used_nutrition_consultations < 0:
-                raise ValidationError(
-                    'Used nutrition consultations cannot be negative.'
-                )
-
             if (
                 record.used_nutrition_consultations
                 > record.included_nutrition_consultations
@@ -378,9 +566,35 @@ class FitZoneMembershipSubscription(models.Model):
                     'nutrition consultations.'
                 )
 
+    @api.model
+    def _cron_update_membership_statuses(self):
+        today = fields.Date.context_today(self)
+
+        draft_memberships = self.search([
+            ('status', '=', 'draft'),
+            ('activation_date', '!=', False),
+            ('activation_date', '<=', today),
+        ])
+
+        draft_memberships.write({
+            'status': 'active',
+        })
+
+        active_memberships = self.search([
+            ('status', '=', 'active'),
+            ('expiration_date', '!=', False),
+            ('expiration_date', '<', today),
+        ])
+
+        active_memberships.write({
+            'status': 'expired',
+        })
+
+        return True
+
+    
     def action_resume_after_freeze(self):
         for record in self:
-
             if record.status != 'frozen':
                 raise ValidationError(
                     'Only frozen memberships can be resumed.'
@@ -402,14 +616,39 @@ class FitZoneMembershipSubscription(models.Model):
 
             today = fields.Date.context_today(record)
 
-            if freeze.end_date and today <= freeze.end_date:
-                raise ValidationError(
-                    'The membership cannot be resumed before the freeze '
-                    'period ends.'
+            if today < freeze.start_date:
+                actual_days = 0
+            else:
+                actual_days = (
+                    today - freeze.start_date
+                ).days + 1
+
+            actual_days = min(
+                actual_days,
+                freeze.freeze_days,
+            )
+
+            unused_days = freeze.freeze_days - actual_days
+
+            if (
+                unused_days > 0
+                and record.expiration_date
+            ):
+                record.expiration_date = (
+                    record.expiration_date
+                    - relativedelta(days=unused_days)
                 )
 
+            freeze.actual_freeze_days = actual_days
             freeze.status = 'completed'
-            record.status = 'active'
 
+            record.used_freeze_days += actual_days
+
+            if (
+                record.expiration_date
+                and record.expiration_date < today
+            ):
+                record.status = 'expired'
+            else:
+                record.status = 'active'
         return True
-        

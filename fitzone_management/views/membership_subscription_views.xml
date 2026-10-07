@@ -61,14 +61,20 @@
                         </group>
 
                         <group>
-                            <field name="original_expiration_date"/>
-                            <field name="expiration_date"/>
+                            <field
+                                name="original_expiration_date"
+                                readonly="1"
+                            />
+                            <field
+                                name="expiration_date"
+                                readonly="1"
+                            />
                         </group>
                     </group>
 
                     <group string="Pricing">
                         <group>
-                            <field name="price"/>
+                            <field name="price" readonly="1"/>
                             <field name="discount"/>
                             <field name="final_price"/>
                             <field name="currency_id" invisible="1"/>
