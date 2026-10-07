@@ -12,13 +12,18 @@ class FitZoneFacility(models.Model):
     )
 
     facility_type = fields.Selection(
-    [
-        ('yoga', 'Yoga'),
-        ('pilates', 'Pilates'),
-        ('crossfit', 'CrossFit'),
-        ('swimming', 'Swimming'),
-    ],
-    string='Facility Type'
+        [
+            ('yoga', 'Yoga'),
+            ('pilates', 'Pilates'),
+            ('crossfit', 'CrossFit'),
+            ('swimming', 'Swimming'),
+        ],
+        string='Facility Type'
+    )
+
+    direct_booking = fields.Boolean(
+        string='Allow Direct Booking',
+        default=True
     )
 
     capacity = fields.Integer(

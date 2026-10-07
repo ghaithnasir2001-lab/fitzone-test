@@ -31,7 +31,8 @@ class FitZoneBooking(models.Model):
 
     facility_id = fields.Many2one(
         'fitzone.facility',
-        string='Facility'
+        string='Facility',
+        domain=[('direct_booking', '=', True)]
     )
 
     class_schedule_id = fields.Many2one(
@@ -51,11 +52,6 @@ class FitZoneBooking(models.Model):
         domain=[('is_fitzone_subscriber', '=', True)]
     )
 
-    booking_datetime = fields.Datetime(
-        string='Booking Date & Time',
-        required=True
-    )
-
     status = fields.Selection(
         [
             ('draft', 'Draft'),
@@ -72,8 +68,7 @@ class FitZoneBooking(models.Model):
         'class_id',
         'facility_id',
         'class_schedule_id',
-        'swimming_slot_id',
-        'booking_datetime'
+        'swimming_slot_id'
     )
     def _check_booking_details(self):
         for record in self:
@@ -99,23 +94,15 @@ class FitZoneBooking(models.Model):
                         'The selected class schedule must belong to the selected class.'
                     )
 
-                if (
-                    record.booking_datetime
-                    and (
-                        record.booking_datetime
-                        < record.class_schedule_id.start_datetime
-                        or record.booking_datetime
-                        >= record.class_schedule_id.end_datetime
-                    )
-                ):
-                    raise ValidationError(
-                        'The booking date and time must be within the selected class schedule.'
-                    )
-
             elif record.booking_type == 'facility':
                 if not record.facility_id:
                     raise ValidationError(
                         'Facility bookings must have a facility.'
+                    )
+
+                if not record.facility_id.direct_booking:
+                    raise ValidationError(
+                        'This facility cannot be booked directly.'
                     )
 
                 if record.facility_id.state != 'available':
@@ -143,19 +130,59 @@ class FitZoneBooking(models.Model):
                         )
 
                     if (
-                        record.booking_datetime
-                        < record.swimming_slot_id.start_datetime
-                        or record.booking_datetime
-                        >= record.swimming_slot_id.end_datetime
+                        not record.swimming_slot_id.start_datetime
+                        or not record.swimming_slot_id.end_datetime
                     ):
                         raise ValidationError(
-                            'The booking date and time must be within the selected swimming slot.'
+                            'Swimming bookings require a valid swimming slot with date and time.'
                         )
 
                 elif record.swimming_slot_id:
                     raise ValidationError(
                         'Swimming slot can only be used for swimming facilities.'
                     )
+
+    @api.constrains(
+        'booking_type',
+        'class_schedule_id',
+        'status'
+    )
+    def _check_class_schedule_facility_availability(self):
+        for record in self:
+            if (
+                record.status == 'cancelled'
+                or record.booking_type != 'class'
+                or not record.class_schedule_id
+            ):
+                continue
+
+            facility = record.class_schedule_id.facility_id
+
+            if facility.state != 'available':
+                raise ValidationError(
+                    'This class schedule cannot be booked because its facility is not available.'
+                )
+
+    @api.constrains(
+        'booking_type',
+        'swimming_slot_id',
+        'status'
+    )
+    def _check_swimming_slot_facility_availability(self):
+        for record in self:
+            if (
+                record.status == 'cancelled'
+                or record.booking_type != 'facility'
+                or not record.swimming_slot_id
+            ):
+                continue
+
+            facility = record.swimming_slot_id.facility_id
+
+            if facility.state != 'available':
+                raise ValidationError(
+                    'This swimming slot cannot be booked because the swimming pool is not available.'
+                )
 
     @api.constrains(
         'subscriber_id',
@@ -191,7 +218,6 @@ class FitZoneBooking(models.Model):
         'class_schedule_id',
         'facility_id',
         'swimming_slot_id',
-        'booking_datetime',
         'status'
     )
     def _check_capacity(self):
@@ -235,11 +261,6 @@ class FitZoneBooking(models.Model):
                             record.facility_id.id
                         ),
                         ('booking_type', '=', 'facility'),
-                        (
-                            'booking_datetime',
-                            '=',
-                            record.booking_datetime
-                        ),
                         ('status', '=', 'confirmed'),
                     ])
 

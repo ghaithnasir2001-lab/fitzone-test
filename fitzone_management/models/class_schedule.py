@@ -28,7 +28,8 @@ class FitZoneClassSchedule(models.Model):
     facility_id = fields.Many2one(
         'fitzone.facility',
         string='Facility',
-        required=True
+        required=True,
+        domain=[('state', '=', 'available')]
     )
 
     start_datetime = fields.Datetime(
@@ -72,7 +73,7 @@ class FitZoneClassSchedule(models.Model):
                 else None
             )
 
-            day = start.strftime('%A')
+            date = start.strftime('%d/%m/%Y')
             start_time = start.strftime('%I:%M %p').lstrip('0')
 
             if end:
@@ -89,7 +90,7 @@ class FitZoneClassSchedule(models.Model):
 
             parts = [
                 record.class_id.name,
-                day,
+                date,
                 time_range,
                 facility_name
             ]
@@ -97,6 +98,14 @@ class FitZoneClassSchedule(models.Model):
             record.name = ' — '.join(
                 part for part in parts if part
             )
+
+    @api.constrains('facility_id')
+    def _check_facility_availability(self):
+        for record in self:
+            if record.facility_id.state != 'available':
+                raise ValidationError(
+                    'A class schedule can only use an available facility.'
+                )
 
     @api.constrains('start_datetime', 'end_datetime')
     def _check_datetime_range(self):

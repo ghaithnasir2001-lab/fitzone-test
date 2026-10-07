@@ -12,7 +12,6 @@
                 <field name="facility_id"/>
                 <field name="class_schedule_id"/>
                 <field name="swimming_slot_id"/>
-                <field name="booking_datetime"/>
                 <field name="status"/>
             </list>
         </field>
@@ -52,7 +51,6 @@
                             domain="[('facility_id', '=', facility_id)]"
                         />
 
-                        <field name="booking_datetime"/>
                         <field name="status"/>
 
                     </group>
