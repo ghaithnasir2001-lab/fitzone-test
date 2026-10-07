@@ -24,7 +24,7 @@
             <form>
                 <sheet>
                     <group>
-                        <field name="name"/>
+                        <field name="name" invisible="1"/>
                         <field name="facility_id"/>
                         <field name="slot_type"/>
                         <field name="start_datetime"/>

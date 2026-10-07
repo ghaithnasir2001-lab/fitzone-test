@@ -6,6 +6,7 @@
         <field name="arch" type="xml">
             <list string="Bookings">
                 <field name="name"/>
+                <field name="subscriber_id"/>
                 <field name="booking_type"/>
                 <field name="class_id"/>
                 <field name="facility_id"/>
@@ -24,8 +25,10 @@
             <form string="Booking">
                 <sheet>
                     <group>
+
                         <field name="name"/>
                         <field name="booking_type"/>
+                        <field name="subscriber_id"/>
 
                         <field
                             name="class_id"
@@ -40,6 +43,7 @@
                         <field
                             name="class_schedule_id"
                             invisible="booking_type != 'class'"
+                            domain="[('class_id', '=', class_id)]"
                         />
 
                         <field
@@ -50,6 +54,7 @@
 
                         <field name="booking_datetime"/>
                         <field name="status"/>
+
                     </group>
                 </sheet>
             </form>
