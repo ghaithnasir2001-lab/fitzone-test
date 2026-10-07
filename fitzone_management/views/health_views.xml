@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-    <!-- Health Assessment List -->
+    <!-- Clinic Assessment List -->
     <record id="view_fitzone_health_assessment_list" model="ir.ui.view">
         <field name="name">fitzone.health.assessment.list</field>
         <field name="model">fitzone.health.assessment</field>
@@ -12,13 +12,14 @@
                 <field name="assessment_type"/>
                 <field name="assessment_date"/>
                 <field name="performed_by"/>
+                <field name="assigned_to"/>
                 <field name="state"/>
                 <field name="health_status"/>
             </list>
         </field>
     </record>
 
-    <!-- Health Assessment Form -->
+    <!-- Clinic Assessment Form -->
     <record id="view_fitzone_health_assessment_form" model="ir.ui.view">
         <field name="name">fitzone.health.assessment.form</field>
         <field name="model">fitzone.health.assessment</field>
@@ -65,6 +66,10 @@
 
                         <group>
                             <field name="performed_by"
+                                   domain="[('fitzone_staff_type', '=', 'nurse')]"
+                                   readonly="state == 'completed'"/>
+
+                            <field name="assigned_to"
                                    domain="[
                                        ('fitzone_staff_type', '=',
                                         assessment_type == 'initial'
@@ -94,6 +99,8 @@
                         </page>
 
                         <page string="Measurements">
+                            <separator string="Subscriber InBody Measurements"/>
+
                             <field name="measurement_ids"
                                    context="{'default_partner_id': partner_id}"
                                    readonly="state == 'completed'">
@@ -117,7 +124,7 @@
         </field>
     </record>
 
-    <!-- Health Measurement List -->
+    <!-- Clinic Measurement List -->
     <record id="view_fitzone_health_measurement_list" model="ir.ui.view">
         <field name="name">fitzone.health.measurement.list</field>
         <field name="model">fitzone.health.measurement</field>
@@ -137,13 +144,14 @@
         </field>
     </record>
 
-    <!-- Health Measurement Form -->
+    <!-- Clinic Measurement Form -->
     <record id="view_fitzone_health_measurement_form" model="ir.ui.view">
         <field name="name">fitzone.health.measurement.form</field>
         <field name="model">fitzone.health.measurement</field>
         <field name="arch" type="xml">
             <form>
                 <sheet>
+
                     <group>
                         <group>
                             <field name="partner_id"
@@ -155,11 +163,18 @@
                             <field name="measurement_date"/>
                             <field name="recorded_by"/>
                         </group>
+                    </group>
 
+                    <separator string="Subscriber InBody Measurements"/>
+
+                    <group>
                         <group>
                             <field name="weight"/>
                             <field name="height"/>
                             <field name="bmi"/>
+                        </group>
+
+                        <group>
                             <field name="body_fat"/>
                             <field name="muscle_mass"/>
                             <field name="blood_pressure"/>
@@ -169,12 +184,13 @@
                     <group>
                         <field name="notes"/>
                     </group>
+
                 </sheet>
             </form>
         </field>
     </record>
 
-    <!-- Health Assessment Action -->
+    <!-- Clinic Assessment Action -->
     <record id="action_fitzone_health_assessments" model="ir.actions.act_window">
         <field name="name">Health Assessments</field>
         <field name="res_model">fitzone.health.assessment</field>
@@ -182,7 +198,7 @@
         <field name="domain">[('partner_id.is_fitzone_subscriber', '=', True)]</field>
     </record>
 
-    <!-- Health Measurement Action -->
+    <!-- Clinic Measurement Action -->
     <record id="action_fitzone_health_measurements" model="ir.actions.act_window">
         <field name="name">Health Measurements</field>
         <field name="res_model">fitzone.health.measurement</field>
@@ -190,10 +206,10 @@
         <field name="domain">[('partner_id.is_fitzone_subscriber', '=', True)]</field>
     </record>
 
-    <!-- Health Menus -->
+    <!-- Clinic Menus -->
     <menuitem
         id="menu_fitzone_health_root"
-        name="Health"
+        name="Clinic"
         parent="fitzone_management.menu_fitzone_root"
         sequence="20"
     />
@@ -222,7 +238,7 @@
         <field name="arch" type="xml">
 
             <notebook position="inside">
-                <page string="Health"
+                <page string="Clinic"
                       invisible="not is_fitzone_subscriber">
 
                     <group>
@@ -236,6 +252,7 @@
                             <field name="assessment_type"/>
                             <field name="assessment_date"/>
                             <field name="performed_by"/>
+                            <field name="assigned_to"/>
                             <field name="state"/>
                             <field name="health_status"/>
                         </list>

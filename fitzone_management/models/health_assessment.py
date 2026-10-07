@@ -1,4 +1,4 @@
-from odoo import api, fields, models, _
+from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 
 
@@ -54,6 +54,13 @@ class FitZoneHealthAssessment(models.Model):
         'hr.employee',
         string='Performed By',
         required=True,
+        default=lambda self: self._default_performed_by(),
+    )
+
+    assigned_to = fields.Many2one(
+        'hr.employee',
+        string='Assigned To',
+        required=True,
     )
 
     medical_notes = fields.Text(
@@ -78,10 +85,49 @@ class FitZoneHealthAssessment(models.Model):
         string='Measurements',
     )
 
+    @api.model
+    def _default_performed_by(self):
+        employee = self.env['hr.employee'].search(
+            [('user_id', '=', self.env.user.id)],
+            limit=1,
+        )
+
+        if employee and employee.fitzone_staff_type == 'nurse':
+            return employee.id
+
+        return False
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            performed_by_id = vals.get('performed_by')
+
+            if not performed_by_id:
+                raise ValidationError(
+                    'Please select the Nurse who performed the assessment.'
+                )
+
+            performed_by = self.env['hr.employee'].browse(
+                performed_by_id
+            ).exists()
+
+            if (
+                not performed_by
+                or performed_by.fitzone_staff_type != 'nurse'
+            ):
+                raise ValidationError(
+                    'Performed By must be a Nurse.'
+                )
+
+        return super().create(vals_list)
+
     @api.constrains('partner_id')
     def _check_subscriber(self):
         for record in self:
-            if record.partner_id and not record.partner_id.is_fitzone_subscriber:
+            if (
+                record.partner_id
+                and not record.partner_id.is_fitzone_subscriber
+            ):
                 raise ValidationError(
                     'A health assessment can only be created for a FitZone subscriber.'
                 )
@@ -106,10 +152,22 @@ class FitZoneHealthAssessment(models.Model):
                     'A subscriber can have only one Initial Health Assessment.'
                 )
 
-    @api.constrains('assessment_type', 'performed_by')
-    def _check_performed_by(self):
+    @api.constrains(
+        'assessment_type',
+        'performed_by',
+        'assigned_to',
+    )
+    def _check_staff_assignments(self):
         for record in self:
-            if not record.performed_by:
+            if (
+                record.performed_by
+                and record.performed_by.fitzone_staff_type != 'nurse'
+            ):
+                raise ValidationError(
+                    'The assessment must be performed by a Nurse.'
+                )
+
+            if not record.assigned_to:
                 continue
 
             expected_staff_type = (
@@ -118,7 +176,7 @@ class FitZoneHealthAssessment(models.Model):
                 else 'physiotherapist'
             )
 
-            if record.performed_by.fitzone_staff_type != expected_staff_type:
+            if record.assigned_to.fitzone_staff_type != expected_staff_type:
                 role_name = (
                     'Nutritionist'
                     if expected_staff_type == 'nutritionist'
@@ -126,7 +184,8 @@ class FitZoneHealthAssessment(models.Model):
                 )
 
                 raise ValidationError(
-                    'This assessment must be performed by a %s.' % role_name
+                    'This assessment must be assigned to a %s.'
+                    % role_name
                 )
 
     def action_mark_completed(self):
@@ -134,39 +193,27 @@ class FitZoneHealthAssessment(models.Model):
             if record.state == 'completed':
                 continue
 
+            if self.env.user.has_group('base.group_system'):
+                record.with_context(
+                    fitzone_allow_complete=True
+                ).write({
+                    'state': 'completed',
+                })
+                continue
+
             employee = self.env['hr.employee'].search(
                 [('user_id', '=', self.env.user.id)],
                 limit=1,
             )
 
-            if not employee:
+            if not employee or employee.fitzone_staff_type != 'nurse':
                 raise ValidationError(
-                    'Only the staff member who performed the assessment can mark it as completed.'
+                    'Only a Nurse or Administrator can mark a health assessment as completed.'
                 )
 
-            if employee != record.performed_by:
-                raise ValidationError(
-                    'Only the staff member who performed the assessment can mark it as completed.'
-                )
-
-            expected_staff_type = (
-                'nutritionist'
-                if record.assessment_type == 'initial'
-                else 'physiotherapist'
-            )
-
-            if employee.fitzone_staff_type != expected_staff_type:
-                role_name = (
-                    'Nutritionist'
-                    if expected_staff_type == 'nutritionist'
-                    else 'Physiotherapist'
-                )
-
-                raise ValidationError(
-                    'Only a %s can mark this assessment as completed.' % role_name
-                )
-
-            record.with_context(fitzone_allow_complete=True).write({
+            record.with_context(
+                fitzone_allow_complete=True
+            ).write({
                 'state': 'completed',
             })
 
@@ -177,6 +224,16 @@ class FitZoneHealthAssessment(models.Model):
             })
 
     def write(self, vals):
+        if 'performed_by' in vals:
+            for record in self:
+                if (
+                    record.state == 'completed'
+                    and vals['performed_by'] != record.performed_by.id
+                ):
+                    raise ValidationError(
+                        'Performed By cannot be changed after the assessment is completed.'
+                    )
+
         if vals.get('state') == 'completed' and not self.env.context.get(
             'fitzone_allow_complete'
         ):
@@ -245,7 +302,10 @@ class FitZoneHealthMeasurement(models.Model):
     @api.constrains('partner_id')
     def _check_subscriber(self):
         for record in self:
-            if record.partner_id and not record.partner_id.is_fitzone_subscriber:
+            if (
+                record.partner_id
+                and not record.partner_id.is_fitzone_subscriber
+            ):
                 raise ValidationError(
                     'A health measurement can only be created for a FitZone subscriber.'
                 )
