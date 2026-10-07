@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-    <!-- Membership Package List View -->
     <record id="view_fitzone_membership_package_list" model="ir.ui.view">
         <field name="name">fitzone.membership.package.list</field>
         <field name="model">fitzone.membership.package</field>
@@ -9,6 +8,7 @@
             <list>
                 <field name="name"/>
                 <field name="package_type"/>
+                <field name="is_all_inclusive"/>
                 <field name="duration_months"/>
                 <field name="price"/>
                 <field name="freeze_days"/>
@@ -20,7 +20,7 @@
         </field>
     </record>
 
-    <!-- Membership Package Form View -->
+
     <record id="view_fitzone_membership_package_form" model="ir.ui.view">
         <field name="name">fitzone.membership.package.form</field>
         <field name="model">fitzone.membership.package</field>
@@ -40,6 +40,13 @@
                         <group>
                             <field name="package_type"/>
                             <field name="duration_months"/>
+
+
+                            <field
+                                name="is_all_inclusive"
+                                invisible="package_type != 'general'"
+                            />
+
                             <field name="price"/>
                             <field name="currency_id"/>
                         </group>
@@ -53,11 +60,46 @@
                         </group>
                     </group>
 
+
+                    <div
+                        class="alert alert-info"
+                        role="alert"
+                        invisible="package_type != 'general' or not is_all_inclusive"
+                    >
+                        <strong>All-Inclusive Package</strong>
+
+                        <p>
+                            This package combines General membership benefits
+                            with additional physiotherapy and nutrition services.
+                        </p>
+
+                        <ul>
+                            <li>
+                                Adds <strong>20 JOD</strong> to the General package price.
+                            </li>
+                            <li>
+                                Includes <strong>2 physiotherapy sessions per month</strong>.
+                            </li>
+                            <li>
+                                Includes <strong>1 nutrition consultation</strong>
+                                during the membership.
+                            </li>
+                            <li>
+                                Gym access follows the selected General package duration.
+                            </li>
+                        </ul>
+                    </div>
+
+
                     <notebook>
+
                         <page string="Included Services">
-                            <field name="description"
-                                   placeholder="Describe the services included in this package..."/>
+                            <field
+                                name="description"
+                                placeholder="Describe the services included in this package..."
+                            />
                         </page>
+
                     </notebook>
 
                 </sheet>
@@ -66,21 +108,21 @@
         </field>
     </record>
 
-    <!-- Membership Package Action -->
+
     <record id="action_fitzone_membership_packages" model="ir.actions.act_window">
         <field name="name">Membership Packages</field>
         <field name="res_model">fitzone.membership.package</field>
         <field name="view_mode">list,form</field>
     </record>
 
-    <!-- FitZone Management Main Menu -->
+
     <menuitem
         id="menu_fitzone_root"
         name="FitZone Management"
         sequence="10"
     />
 
-    <!-- Membership Menu -->
+
     <menuitem
         id="menu_fitzone_membership_root"
         name="Membership"
@@ -88,7 +130,7 @@
         sequence="20"
     />
 
-    <!-- Membership Packages -->
+
     <menuitem
         id="menu_fitzone_membership_packages"
         name="Membership Packages"

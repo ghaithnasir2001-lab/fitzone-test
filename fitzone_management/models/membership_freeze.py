@@ -47,6 +47,13 @@ class FitZoneMembershipFreeze(models.Model):
         required=True,
     )
 
+    applied_freeze_days = fields.Integer(
+        string='Applied Freeze Days',
+        default=0,
+        readonly=True,
+        copy=False,
+    )
+
     actual_freeze_days = fields.Integer(
         string='Actual Freeze Days',
         default=0,
@@ -76,9 +83,11 @@ class FitZoneMembershipFreeze(models.Model):
         string='Notes',
     )
 
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
+
             if vals.get('name', 'New') == 'New':
                 vals['name'] = self.env['ir.sequence'].next_by_code(
                     'fitzone.membership.freeze'
@@ -86,29 +95,44 @@ class FitZoneMembershipFreeze(models.Model):
 
         return super().create(vals_list)
 
-    @api.depends('start_date', 'freeze_days')
+
+
+    @api.depends(
+        'start_date',
+        'freeze_days',
+        'applied_freeze_days',
+        'status',
+    )
     def _compute_end_date(self):
         for record in self:
-            if record.start_date and record.freeze_days > 0:
+
+            effective_days = (
+                record.applied_freeze_days
+                if record.applied_freeze_days
+                else record.freeze_days
+            )
+
+            if record.start_date and effective_days > 0:
                 record.end_date = (
                     record.start_date
-                    + relativedelta(days=record.freeze_days - 1)
+                    + relativedelta(days=effective_days - 1)
                 )
             else:
                 record.end_date = False
 
+
+
     @api.constrains(
-        'subscription_id',
-        'request_date',
         'start_date',
         'freeze_days',
+        'subscription_id',
     )
     def _check_freeze_dates(self):
         for record in self:
 
             if record.freeze_days <= 0:
                 raise ValidationError(
-                    'Freeze days must be greater than zero.'
+                    'Requested freeze days must be greater than zero.'
                 )
 
             subscription = record.subscription_id
@@ -118,147 +142,169 @@ class FitZoneMembershipFreeze(models.Model):
 
             if subscription.status not in ('active', 'frozen'):
                 raise ValidationError(
-                    'Freeze can only be requested for an active membership.'
+                    'Freeze can only be requested for an active or frozen '
+                    'membership.'
                 )
 
-            if (
-                record.start_date
-                and subscription.activation_date
-                and record.start_date < subscription.activation_date
-            ):
+            if not subscription.activation_date:
                 raise ValidationError(
-                    'Freeze cannot start before the membership activation date.'
+                    'The membership must have an activation date.'
                 )
 
-            if (
-                record.start_date
-                and subscription.expiration_date
-            ):
-                grace_period_end = (
-                    subscription.expiration_date
-                    + relativedelta(months=2)
+            if record.start_date < subscription.activation_date:
+                raise ValidationError(
+                    'Freeze start date cannot be before the membership '
+                    'activation date.'
                 )
 
-                if record.start_date > grace_period_end:
-                    raise ValidationError(
-                        'Freeze can only be used during the membership '
-                        'period or within two months after expiration.'
-                    )
-
-    @api.constrains('subscription_id', 'freeze_days')
-    def _check_freeze_allowance(self):
+    @api.constrains(
+        'applied_freeze_days',
+        'subscription_id',
+    )
+    def _check_applied_freeze_allowance(self):
         for record in self:
 
             if not record.subscription_id:
                 continue
 
-            other_freezes = self.search([
-                ('subscription_id', '=', record.subscription_id.id),
-                ('id', '!=', record.id),
-                ('status', '!=', 'cancelled'),
-            ])
+            if record.applied_freeze_days <= 0:
+                continue
 
-            used_days = sum(
-                other_freezes.mapped('actual_freeze_days')
+            other_freezes = self.search(
+                [
+                    ('subscription_id', '=', record.subscription_id.id),
+                    ('id', '!=', record.id),
+                    ('status', '!=', 'cancelled'),
+                ]
             )
 
-            if used_days + record.freeze_days > (
-                record.subscription_id.allowed_freeze_days
+            used_or_applied = sum(
+                freeze.actual_freeze_days
+                if freeze.status == 'completed'
+                else freeze.applied_freeze_days
+                for freeze in other_freezes
+            )
+
+            if (
+                used_or_applied + record.applied_freeze_days
+                > record.subscription_id.allowed_freeze_days
             ):
                 raise ValidationError(
-                    'Total freeze days cannot exceed the allowed freeze '
-                    'days for this membership.'
+                    'Applied freeze days cannot exceed the membership '
+                    'freeze allowance.'
                 )
+
 
     def action_apply_freeze(self):
         for record in self:
-
             if record.status != 'draft':
                 raise ValidationError(
                     'Only draft freeze requests can be applied.'
-                )
-
-            if record.freeze_days <= 0:
-                raise ValidationError(
-                    'Freeze days must be greater than zero.'
                 )
 
             subscription = record.subscription_id
 
             if not subscription:
                 raise ValidationError(
-                    'Membership subscription is required.'
+                    'A membership subscription is required.'
                 )
 
             if subscription.status != 'active':
                 raise ValidationError(
-                    'Only active memberships can be frozen.'
-                )
-
-            if record.freeze_days > subscription.remaining_freeze_days:
-                raise ValidationError(
-                    'Freeze days exceed the remaining freeze allowance.'
+                    'Freeze can only be applied to an active membership.'
                 )
 
             if not subscription.expiration_date:
                 raise ValidationError(
-                    'Membership expiration date is required before applying '
-                    'a freeze.'
+                    'The membership must have an expiration date.'
                 )
 
-            grace_period_end = (
-                subscription.expiration_date
-                + relativedelta(months=2)
+            if record.start_date > subscription.expiration_date:
+                raise ValidationError(
+                    'Freeze start date cannot be after the membership expiration date.'
+                )
+
+            remaining_membership_days = (
+                subscription.expiration_date - record.start_date
+            ).days + 1
+
+            if remaining_membership_days <= 0:
+                raise ValidationError(
+                    'There are no remaining membership days available '
+                    'for this freeze.'
+                )
+
+            remaining_freeze_days = (
+                subscription.remaining_freeze_days
             )
 
-            if record.start_date > grace_period_end:
+            if remaining_freeze_days <= 0:
                 raise ValidationError(
-                    'Freeze can only be applied during the membership '
-                    'period or within two months after expiration.'
+                    'No freeze days remain for this membership.'
                 )
+
+            if record.freeze_days > remaining_membership_days or record.freeze_days > remaining_freeze_days:
+                raise ValidationError(
+                    f'Requested freeze days ({record.freeze_days}) cannot exceed available membership days ({remaining_membership_days}) or remaining freeze allowance ({remaining_freeze_days}).'
+                )
+
+            applicable_freeze_days = min(
+                record.freeze_days,
+                remaining_freeze_days,
+                remaining_membership_days,
+            )
+
+            if applicable_freeze_days <= 0:
+                raise ValidationError(
+                    'The calculated freeze duration must be greater than zero.'
+                )
+
+            record.applied_freeze_days = applicable_freeze_days
+            record.actual_freeze_days = 0
 
             subscription.expiration_date = (
                 subscription.expiration_date
-                + relativedelta(days=record.freeze_days)
+                + relativedelta(days=applicable_freeze_days)
             )
-
-            # Initially no days are considered permanently consumed.
-            # They are calculated when the freeze is resumed or completed.
-            record.actual_freeze_days = 0
 
             subscription.status = 'frozen'
             record.status = 'active'
-
         return True
+
 
     @api.model
     def _cron_complete_expired_freezes(self):
         today = fields.Date.context_today(self)
 
-        expired_freezes = self.search([
-            ('status', '=', 'active'),
-            ('end_date', '<', today),
-        ])
+        freezes = self.search(
+            [
+                ('status', '=', 'active'),
+                ('end_date', '<', today),
+            ]
+        )
 
-        for freeze in expired_freezes:
-            subscription = freeze.subscription_id
+        for freeze in freezes:
 
-            # The full requested freeze period was used.
-            freeze.actual_freeze_days = freeze.freeze_days
+            if freeze.applied_freeze_days <= 0:
+                freeze.status = 'completed'
+                continue
+
+            freeze.actual_freeze_days = freeze.applied_freeze_days
             freeze.status = 'completed'
 
-            if subscription:
-                if subscription.status == 'frozen':
-                    subscription.used_freeze_days += (
-                        freeze.actual_freeze_days
-                    )
+            subscription = freeze.subscription_id
 
-                    if (
-                        subscription.expiration_date
-                        and subscription.expiration_date < today
-                    ):
-                        subscription.status = 'expired'
-                    else:
-                        subscription.status = 'active'
+            if not subscription:
+                continue
 
-        return True
+            subscription.used_freeze_days += (
+                freeze.applied_freeze_days
+            )
+
+            if (
+                subscription.expiration_date
+                and subscription.expiration_date < today
+            ):
+                subscription.status = 'expired'
+            else:
+                subscription.status = 'active'
