@@ -7,6 +7,15 @@ class FitZoneTrainerBooking(models.Model):
     _description = "FitZone Trainer Booking"
     _order = "start_datetime"
 
+    name = fields.Char(
+        string="Booking Reference",
+        required=True,
+        default=lambda self: self.env["ir.sequence"].next_by_code(
+            "fitzone.trainer.booking"
+        ) or "New",
+        copy=False,
+    )
+
     trainer_id = fields.Many2one(
         "fitzone.trainer",
         string="Trainer",
