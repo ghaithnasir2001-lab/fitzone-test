@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_fitzone_membership_subscription_list" model="ir.ui.view">
+        <field name="name">fitzone.membership.subscription.list</field>
+        <field name="model">fitzone.membership.subscription</field>
+        <field name="arch" type="xml">
+            <list>
+
+                <field name="name"/>
+                <field name="subscriber_id"/>
+                <field name="package_id"/>
+                <field name="subscription_date"/>
+                <field name="activation_date"/>
+                <field name="expiration_date"/>
+                <field name="status"/>
+                <field name="final_price"/>
+
+            </list>
+        </field>
+    </record>
+
+
+    <record id="view_fitzone_membership_subscription_form" model="ir.ui.view">
+        <field name="name">fitzone.membership.subscription.form</field>
+        <field name="model">fitzone.membership.subscription</field>
+        <field name="arch" type="xml">
+
+            <form string="Membership Subscription">
+
+                <header>
+
+                    <button
+                        name="action_resume_after_freeze"
+                        type="object"
+                        string="Resume Membership"
+                        class="btn-primary"
+                        invisible="status != 'frozen'"
+                    />
+
+                </header>
+
+
+                <sheet>
+
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+
+
+                    <group>
+
+                        <group>
+                            <field name="subscriber_id"/>
+                            <field name="package_id"/>
+                        </group>
+
+                        <group>
+                            <field name="subscription_date"/>
+                            <field name="activation_date"/>
+                            <field name="original_expiration_date"/>
+                            <field name="expiration_date"/>
+                            <field name="status"/>
+                        </group>
+
+                    </group>
+
+
+                    <group string="Pricing">
+
+                        <group>
+                            <field name="price"/>
+                            <field name="discount"/>
+                            <field name="final_price"/>
+                            <field
+                                name="currency_id"
+                                invisible="1"
+                            />
+                        </group>
+
+                    </group>
+
+
+                    <notebook>
+
+                        <page string="Freeze">
+
+                            <group>
+
+                                <group>
+                                    <field name="allowed_freeze_days"/>
+                                    <field name="used_freeze_days"/>
+                                    <field name="remaining_freeze_days"/>
+                                </group>
+
+                            </group>
+
+                        </page>
+
+
+                        <page string="Included Services">
+
+                            <group>
+
+                                <group string="Personal Training">
+                                    <field name="included_pt_sessions"/>
+                                    <field name="used_pt_sessions"/>
+                                    <field name="remaining_pt_sessions"/>
+                                </group>
+
+                                <group string="Physiotherapy">
+                                    <field name="included_physio_sessions"/>
+                                    <field name="used_physio_sessions"/>
+                                    <field name="remaining_physio_sessions"/>
+                                </group>
+
+                                <group string="Nutrition">
+                                    <field name="included_nutrition_consultations"/>
+                                    <field name="used_nutrition_consultations"/>
+                                    <field name="remaining_nutrition_consultations"/>
+                                </group>
+
+                            </group>
+
+                        </page>
+
+
+                        <page string="Renewal">
+
+                            <group>
+
+                                <field name="previous_subscription_id"/>
+                                <field name="renewal_subscription_id"/>
+                                <field name="renewal_date"/>
+
+                            </group>
+
+                        </page>
+
+
+                        <page string="Notes">
+
+                            <field
+                                name="notes"
+                                placeholder="Add membership notes..."
+                            />
+
+                        </page>
+
+                    </notebook>
+
+                </sheet>
+
+            </form>
+
+        </field>
+    </record>
+
+
+    <record
+        id="action_fitzone_membership_subscriptions"
+        model="ir.actions.act_window"
+    >
+        <field name="name">Membership Subscriptions</field>
+        <field name="res_model">fitzone.membership.subscription</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+
+    <menuitem
+        id="menu_fitzone_membership_subscriptions"
+        name="Membership Subscriptions"
+        parent="menu_fitzone_membership_root"
+        action="action_fitzone_membership_subscriptions"
+        sequence="20"
+    />
+
+</odoo>
