@@ -8,8 +8,8 @@
             <list string="Check-ins">
                 <field name="name"/>
                 <field name="barcode"/>
-                <field name="subscriber_id"/>
-                <field name="membership_id"/>
+                <field name="subscriber_id" force_save="1"/>
+                <field name="membership_id" force_save="1"/>
                 <field name="checkin_datetime"/>
                 <field name="status"/>
             </list>
@@ -53,8 +53,8 @@
 
                         <group>
                             <field name="checkin_datetime"/>
-                            <field name="subscriber_id"/>
-                            <field name="membership_id"/>
+                            <field name="subscriber_id" force_save="1"/>
+                            <field name="membership_id" force_save="1"/>
                         </group>
                     </group>
 

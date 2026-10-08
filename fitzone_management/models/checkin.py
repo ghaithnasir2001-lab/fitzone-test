@@ -10,9 +10,7 @@ class FitZoneCheckin(models.Model):
     name = fields.Char(
         string='Check-in Reference',
         required=True,
-        default=lambda self: self.env['ir.sequence'].next_by_code(
-            'fitzone.checkin'
-        ) or 'New',
+        default='New',
         copy=False,
         readonly=True,
     )
@@ -54,6 +52,19 @@ class FitZoneCheckin(models.Model):
         required=True,
         readonly=True,
     )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        sequence = self.env['ir.sequence']
+
+        for vals in vals_list:
+            if not vals.get('name') or vals.get('name') == 'New':
+                vals['name'] = (
+                    sequence.next_by_code('fitzone.checkin')
+                    or 'New'
+                )
+
+        return super().create(vals_list)
 
     @api.onchange('barcode')
     def _onchange_barcode(self):
