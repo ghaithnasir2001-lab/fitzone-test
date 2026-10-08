@@ -12,13 +12,22 @@ class FitZoneFacility(models.Model):
     )
 
     facility_type = fields.Selection(
-    [
-        ('yoga', 'Yoga'),
-        ('pilates', 'Pilates'),
-        ('crossfit', 'CrossFit'),
-        ('swimming', 'Swimming'),
-    ],
-    string='Facility Type'
+        [
+            ('yoga', 'Yoga'),
+            ('pilates', 'Pilates'),
+            ('crossfit', 'CrossFit'),
+            ('swimming', 'Swimming'),
+        ],
+        string='Facility Type'
+    )
+
+    booking_method = fields.Selection(
+        [
+            ('class_schedule', 'Class Schedule'),
+            ('swimming_slot', 'Swimming Slot'),
+        ],
+        string='Booking Method',
+        required=True
     )
 
     capacity = fields.Integer(

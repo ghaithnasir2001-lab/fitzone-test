@@ -3,7 +3,11 @@ from . import fitzone_class
 from . import class_schedule
 from . import swimming_slot
 from . import hr_employee
+from . import booking
 from . import subscriber
+from . import trainer
+from . import trainer_booking
+from . import trainer_schedule
 from . import membership_package
 from . import membership_subscription
 from . import membership_freeze

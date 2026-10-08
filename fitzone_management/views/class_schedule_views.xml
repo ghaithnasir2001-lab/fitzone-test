@@ -41,12 +41,22 @@
             <form>
                 <sheet>
                     <group>
+
                         <field name="class_id"/>
-                        <field name="facility_id"
-                               domain="[('facility_type', '=', class_type)]"/>
+
+                        <field
+                            name="facility_id"
+                            domain="[
+                                ('facility_type', '=', class_type),
+                                ('booking_method', '=', 'class_schedule'),
+                                ('state', '=', 'available')
+                            ]"
+                        />
+
                         <field name="start_datetime"/>
                         <field name="end_datetime"/>
                         <field name="active"/>
+
                     </group>
                 </sheet>
             </form>

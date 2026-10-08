@@ -24,13 +24,24 @@
             <form>
                 <sheet>
                     <group>
-                        <field name="name"/>
-                        <field name="facility_id"/>
+
+                        <field name="name" invisible="1"/>
+
+                        <field
+                            name="facility_id"
+                            domain="[
+                                ('facility_type', '=', 'swimming'),
+                                ('booking_method', '=', 'swimming_slot'),
+                                ('state', '=', 'available')
+                            ]"
+                        />
+
                         <field name="slot_type"/>
                         <field name="start_datetime"/>
                         <field name="end_datetime"/>
                         <field name="price"/>
                         <field name="created_by"/>
+
                     </group>
                 </sheet>
             </form>

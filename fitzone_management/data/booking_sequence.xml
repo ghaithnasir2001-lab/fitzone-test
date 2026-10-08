@@ -1,0 +1,11 @@
+<odoo>
+
+    <record id="seq_fitzone_booking" model="ir.sequence">
+        <field name="name">FitZone Booking</field>
+        <field name="code">fitzone.booking</field>
+        <field name="prefix">BOOK/</field>
+        <field name="padding">4</field>
+        <field name="number_next">1</field>
+    </record>
+
+</odoo>
