@@ -57,12 +57,6 @@ class FitZoneHealthAssessment(models.Model):
         default=lambda self: self._default_performed_by(),
     )
 
-    assigned_to = fields.Many2one(
-        'hr.employee',
-        string='Assigned To',
-        required=True,
-    )
-
     medical_notes = fields.Text(
         string='Medical Notes',
     )
@@ -150,42 +144,6 @@ class FitZoneHealthAssessment(models.Model):
             if duplicate_initial:
                 raise ValidationError(
                     'A subscriber can have only one Initial Health Assessment.'
-                )
-
-    @api.constrains(
-        'assessment_type',
-        'performed_by',
-        'assigned_to',
-    )
-    def _check_staff_assignments(self):
-        for record in self:
-            if (
-                record.performed_by
-                and record.performed_by.fitzone_staff_type != 'nurse'
-            ):
-                raise ValidationError(
-                    'The assessment must be performed by a Nurse.'
-                )
-
-            if not record.assigned_to:
-                continue
-
-            expected_staff_type = (
-                'nutritionist'
-                if record.assessment_type == 'initial'
-                else 'physiotherapist'
-            )
-
-            if record.assigned_to.fitzone_staff_type != expected_staff_type:
-                role_name = (
-                    'Nutritionist'
-                    if expected_staff_type == 'nutritionist'
-                    else 'Physiotherapist'
-                )
-
-                raise ValidationError(
-                    'This assessment must be assigned to a %s.'
-                    % role_name
                 )
 
     def action_mark_completed(self):

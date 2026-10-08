@@ -12,7 +12,6 @@
                 <field name="assessment_type"/>
                 <field name="assessment_date"/>
                 <field name="performed_by"/>
-                <field name="assigned_to"/>
                 <field name="state"/>
                 <field name="health_status"/>
             </list>
@@ -69,14 +68,6 @@
                                    domain="[('fitzone_staff_type', '=', 'nurse')]"
                                    readonly="state == 'completed'"/>
 
-                            <field name="assigned_to"
-                                   domain="[
-                                       ('fitzone_staff_type', '=',
-                                        assessment_type == 'initial'
-                                        and 'nutritionist'
-                                        or 'physiotherapist')
-                                   ]"
-                                   readonly="state == 'completed'"/>
 
                             <field name="health_status"
                                    readonly="state == 'completed'"/>
@@ -252,7 +243,6 @@
                             <field name="assessment_type"/>
                             <field name="assessment_date"/>
                             <field name="performed_by"/>
-                            <field name="assigned_to"/>
                             <field name="state"/>
                             <field name="health_status"/>
                         </list>
