@@ -1,3 +1,5 @@
+import base64
+
 from dateutil.relativedelta import relativedelta
 
 from odoo import api, fields, models
@@ -9,11 +11,23 @@ class FitZoneMembershipSubscription(models.Model):
     _description = 'FitZone Membership Subscription'
     _order = 'subscription_date desc, id desc'
 
+    _barcode_unique = models.Constraint(
+        'UNIQUE(barcode)',
+        'Membership barcode must be unique.',
+    )
+
     name = fields.Char(
         string='Membership Number',
         required=True,
         copy=False,
         default='New',
+    )
+
+    barcode = fields.Char(
+        string='Barcode',
+        copy=False,
+        readonly=True,
+        index=True,
     )
 
     subscriber_id = fields.Many2one(
@@ -187,7 +201,6 @@ class FitZoneMembershipSubscription(models.Model):
         string='Notes',
     )
 
-
     @api.model_create_multi
     def create(self, vals_list):
 
@@ -197,6 +210,11 @@ class FitZoneMembershipSubscription(models.Model):
                 vals['name'] = self.env['ir.sequence'].next_by_code(
                     'fitzone.membership.subscription'
                 ) or 'New'
+
+            if not vals.get('barcode'):
+                vals['barcode'] = self.env['ir.sequence'].next_by_code(
+                    'fitzone.membership.barcode'
+                ) or False
 
             package = self.env[
                 'fitzone.membership.package'
@@ -228,7 +246,7 @@ class FitZoneMembershipSubscription(models.Model):
                 if activation_date < subscription_date:
                     raise ValidationError(
                         'Activation date cannot be before subscription date.'
-                )
+                    )
 
                 vals['subscription_date'] = subscription_date
                 vals['activation_date'] = activation_date
@@ -237,7 +255,7 @@ class FitZoneMembershipSubscription(models.Model):
                     activation_date
                     + relativedelta(
                         months=package.duration_months
-                )
+                    )
                     - relativedelta(days=1)
                 )
 
@@ -252,7 +270,6 @@ class FitZoneMembershipSubscription(models.Model):
                     vals['status'] = 'draft'
 
         return super().create(vals_list)
-
 
     def write(self, vals):
 
@@ -289,7 +306,6 @@ class FitZoneMembershipSubscription(models.Model):
                     record.status = 'active'
 
         return result
-
 
     @api.onchange(
         'subscription_date',
@@ -346,7 +362,6 @@ class FitZoneMembershipSubscription(models.Model):
 
             if record.used_nutrition_consultations < 0:
                 record.used_nutrition_consultations = 0
-
 
     @api.depends('price', 'discount')
     def _compute_final_price(self):
@@ -431,7 +446,6 @@ class FitZoneMembershipSubscription(models.Model):
                 - record.used_nutrition_consultations,
                 0,
             )
-
 
     @api.constrains(
         'subscription_date',
@@ -556,7 +570,132 @@ class FitZoneMembershipSubscription(models.Model):
                     'included nutrition consultations.'
                 )
 
+    def _process_attachments_for_template_post(self, mail_template):
 
+        barcode_template = self.env.ref(
+            'fitzone_management.email_template_fitzone_membership_barcode'
+        )
+
+        if mail_template.id != barcode_template.id:
+            return {}
+
+        report = self.env['ir.actions.report']
+        result = {}
+
+        for membership in self:
+
+            if not membership.barcode:
+                continue
+
+            barcode_image = report.barcode(
+                'Code128',
+                membership.barcode,
+                width=600,
+                height=120,
+            )
+
+            result[membership.id] = {
+                'attachments': [
+                    (
+                        f'__fitzone_inline_barcode__{membership.id}.png',
+                        base64.b64encode(barcode_image),
+                    )
+                ]
+            }
+
+        return result
+
+    def action_send_barcode_email(self):
+
+        template = self.env.ref(
+            'fitzone_management.email_template_fitzone_membership_barcode'
+        )
+
+        for membership in self:
+
+            if not membership.subscriber_id.email:
+                raise ValidationError(
+                    'The subscriber does not have an email address.'
+                )
+
+            template.send_mail(
+                membership.id,
+                force_send=True,
+            )
+
+        return True
+
+    @api.model
+    def verify_barcode(self, barcode):
+
+        barcode = (barcode or '').strip()
+
+        if not barcode:
+            return {
+                'allowed': False,
+                'reason': 'Barcode is required.',
+                'membership': False,
+            }
+
+        membership = self.search(
+            [('barcode', '=', barcode)],
+            limit=1,
+        )
+
+        if not membership:
+            return {
+                'allowed': False,
+                'reason': 'No membership found for this barcode.',
+                'membership': False,
+            }
+
+        if membership.status == 'draft':
+            return {
+                'allowed': False,
+                'reason': 'Membership is not active yet.',
+                'membership': membership,
+            }
+
+        if membership.status == 'frozen':
+            return {
+                'allowed': False,
+                'reason': 'Membership is frozen.',
+                'membership': membership,
+            }
+
+        if membership.status == 'expired':
+            return {
+                'allowed': False,
+                'reason': 'Membership has expired.',
+                'membership': membership,
+            }
+
+        if membership.status == 'cancelled':
+            return {
+                'allowed': False,
+                'reason': 'Membership has been cancelled.',
+                'membership': membership,
+            }
+
+        if membership.status == 'renewed':
+            return {
+                'allowed': False,
+                'reason': 'Membership has been renewed.',
+                'membership': membership,
+            }
+
+        if membership.status != 'active':
+            return {
+                'allowed': False,
+                'reason': 'Membership is not active.',
+                'membership': membership,
+            }
+
+        return {
+            'allowed': True,
+            'reason': 'Membership is active.',
+            'membership': membership,
+        }
 
     @api.model
     def _cron_update_membership_statuses(self):
@@ -582,7 +721,6 @@ class FitZoneMembershipSubscription(models.Model):
 
         for membership in active_memberships:
             membership.status = 'expired'
-
 
     def action_resume_after_freeze(self):
 

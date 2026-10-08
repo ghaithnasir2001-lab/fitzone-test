@@ -8,6 +8,7 @@
             <list>
 
                 <field name="name"/>
+                <field name="barcode"/>
                 <field name="subscriber_id"/>
                 <field name="package_id"/>
                 <field name="subscription_date"/>
@@ -38,6 +39,13 @@
                         invisible="status != 'frozen'"
                     />
 
+                    <button
+                        name="action_send_barcode_email"
+                        type="object"
+                        string="Send Barcode Email"
+                        class="btn-primary"
+                    />
+
                 </header>
 
 
@@ -56,6 +64,7 @@
                         <group>
                             <field name="subscriber_id"/>
                             <field name="package_id"/>
+                            <field name="barcode"/>
                         </group>
 
                         <group>

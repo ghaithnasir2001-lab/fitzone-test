@@ -10,3 +10,4 @@ access_fitzone_booking_user,access.fitzone.booking.user,model_fitzone_booking,ba
 access_fitzone_trainer,access_fitzone_trainer,fitzone_management.model_fitzone_trainer,base.group_user,1,1,1,1
 access_fitzone_trainer_booking,access_fitzone_trainer_booking,fitzone_management.model_fitzone_trainer_booking,base.group_user,1,1,1,1
 access_fitzone_trainer_schedule,access_fitzone_trainer_schedule,fitzone_management.model_fitzone_trainer_schedule,base.group_user,1,1,1,1
+access_fitzone_checkin,access_fitzone_checkin,fitzone_management.model_fitzone_checkin,base.group_user,1,1,1,1

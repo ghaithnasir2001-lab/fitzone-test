@@ -9,6 +9,14 @@
         <field name="padding">5</field>
         <field name="company_id" eval="False"/>
     </record>
+        <!-- Membership Barcode Sequence -->
+    <record id="seq_fitzone_membership_barcode" model="ir.sequence">
+        <field name="name">FitZone Membership Barcode</field>
+        <field name="code">fitzone.membership.barcode</field>
+        <field name="prefix"></field>
+        <field name="padding">12</field>
+        <field name="company_id" eval="False"/>
+    </record>
 
     <!-- Membership Freeze Sequence -->
     <record id="seq_fitzone_membership_freeze" model="ir.sequence">

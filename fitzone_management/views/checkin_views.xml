@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_fitzone_checkin_list" model="ir.ui.view">
+        <field name="name">fitzone.checkin.list</field>
+        <field name="model">fitzone.checkin</field>
+        <field name="arch" type="xml">
+            <list string="Check-ins">
+                <field name="name"/>
+                <field name="barcode"/>
+                <field name="subscriber_id"/>
+                <field name="membership_id"/>
+                <field name="checkin_datetime"/>
+                <field name="status"/>
+            </list>
+        </field>
+    </record>
+
+
+    <record id="view_fitzone_checkin_form" model="ir.ui.view">
+        <field name="name">fitzone.checkin.form</field>
+        <field name="model">fitzone.checkin</field>
+        <field name="arch" type="xml">
+            <form string="FitZone Check-in">
+
+                <header>
+                    <button
+                        name="action_check_in"
+                        type="object"
+                        string="Check In"
+                        class="btn-primary"
+                        invisible="status != 'draft'"
+                    />
+
+                    <button
+                        type="button"
+                        string="Scan Barcode"
+                        class="btn-secondary"
+                        id="fitzone_scan_barcode"
+                        invisible="status != 'draft'"
+                    />
+
+                    <field name="status" widget="statusbar"/>
+                </header>
+
+                <sheet>
+
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="barcode"/>
+                        </group>
+
+                        <group>
+                            <field name="checkin_datetime"/>
+                            <field name="subscriber_id"/>
+                            <field name="membership_id"/>
+                        </group>
+                    </group>
+
+                </sheet>
+
+            </form>
+        </field>
+    </record>
+
+
+    <record id="action_fitzone_checkin" model="ir.actions.act_window">
+        <field name="name">Check-ins</field>
+        <field name="res_model">fitzone.checkin</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+
+    <menuitem
+        id="menu_fitzone_checkin"
+        name="Check-ins"
+        parent="menu_fitzone_root"
+        action="action_fitzone_checkin"
+        sequence="60"
+    />
+
+</odoo>
