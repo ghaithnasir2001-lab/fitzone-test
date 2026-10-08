@@ -213,13 +213,6 @@
         sequence="10"
     />
 
-    <menuitem
-        id="menu_fitzone_health_measurements"
-        name="Health Measurements"
-        parent="menu_fitzone_health_root"
-        action="action_fitzone_health_measurements"
-        sequence="20"
-    />
 
     <!-- Subscriber Contact Form Integration -->
     <record id="view_fitzone_contact_form_health" model="ir.ui.view">
@@ -233,18 +226,12 @@
                       invisible="not is_fitzone_subscriber">
 
                     <group>
-                        <field name="health_assessment_status"
-                               readonly="1"/>
+                        <!-- Temporary OwlError diagnostic: hide computed status -->
                     </group>
 
-                    <field name="health_assessment_ids">
+                    <field name="health_assessment_ids" readonly="1">
                         <list>
                             <field name="name"/>
-                            <field name="assessment_type"/>
-                            <field name="assessment_date"/>
-                            <field name="performed_by"/>
-                            <field name="state"/>
-                            <field name="health_status"/>
                         </list>
                     </field>
 

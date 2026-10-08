@@ -257,6 +257,21 @@ class FitZoneHealthMeasurement(models.Model):
         string='Recorded By',
     )
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            assessment_id = vals.get('assessment_id')
+
+            if assessment_id and not vals.get('partner_id'):
+                assessment = self.env[
+                    'fitzone.health.assessment'
+                ].browse(assessment_id).exists()
+
+                if assessment:
+                    vals['partner_id'] = assessment.partner_id.id
+
+        return super().create(vals_list)
+
     @api.constrains('partner_id')
     def _check_subscriber(self):
         for record in self:
@@ -295,23 +310,25 @@ class FitZoneHealthMeasurement(models.Model):
             if record.blood_pressure:
                 blood_pressure = record.blood_pressure.strip()
 
-                if blood_pressure.startswith('-'):
+                if not blood_pressure.replace(' ', '').isdigit() and '/' not in blood_pressure:
                     raise ValidationError(
-                        'Blood Pressure cannot be negative.'
+                        'Blood Pressure must be in the format systolic/diastolic, for example 120/80.'
                     )
 
-                if '/' in blood_pressure:
-                    systolic, diastolic = blood_pressure.split('/', 1)
+                parts = blood_pressure.split('/')
 
-                    if systolic.strip().startswith('-'):
-                        raise ValidationError(
-                            'Blood Pressure cannot contain negative values.'
-                        )
+                if len(parts) != 2:
+                    raise ValidationError(
+                        'Blood Pressure must be in the format systolic/diastolic, for example 120/80.'
+                    )
 
-                    if diastolic.strip().startswith('-'):
-                        raise ValidationError(
-                            'Blood Pressure cannot contain negative values.'
-                        )
+                systolic = parts[0].strip()
+                diastolic = parts[1].strip()
+
+                if not systolic.isdigit() or not diastolic.isdigit():
+                    raise ValidationError(
+                        'Blood Pressure must contain numeric systolic and diastolic values.'
+                    )
 
     @api.constrains('assessment_id', 'partner_id')
     def _check_assessment_subscriber(self):
