@@ -7,6 +7,11 @@ class FitZoneTrainerSchedule(models.Model):
     _description = "FitZone Trainer Working Schedule"
     _order = "day_of_week, start_time"
 
+    _unique_trainer_schedule = models.Constraint(
+        "UNIQUE(trainer_id, day_of_week, start_time, end_time)",
+        "A trainer cannot have duplicate working schedule entries for the same day and time.",
+    )
+
     trainer_id = fields.Many2one(
         "fitzone.trainer",
         string="Trainer",
@@ -46,6 +51,16 @@ class FitZoneTrainerSchedule(models.Model):
     @api.constrains("start_time", "end_time")
     def _check_schedule_time(self):
         for schedule in self:
+            if schedule.start_time < 0 or schedule.end_time < 0:
+                raise ValidationError(
+                    "Start time and end time cannot be negative."
+                )
+
+            if schedule.start_time > 24 or schedule.end_time > 24:
+                raise ValidationError(
+                    "Time must be between 00:00 and 24:00."
+                )
+
             if schedule.end_time <= schedule.start_time:
                 raise ValidationError(
                     "End time must be later than start time."
