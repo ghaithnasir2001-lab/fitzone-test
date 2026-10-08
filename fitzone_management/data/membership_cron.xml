@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="ir_cron_fitzone_membership_status_update"
+            model="ir.cron">
+
+        <field name="name">
+            FitZone Membership Status Update
+        </field>
+
+        <field name="model_id"
+               ref="model_fitzone_membership_subscription"/>
+
+        <field name="state">code</field>
+
+        <field name="code">
+            model._cron_update_membership_statuses()
+        </field>
+
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+        <field name="active">True</field>
+
+    </record>
+
+    <record id="ir_cron_fitzone_freeze_completion"
+            model="ir.cron">
+
+        <field name="name">
+            FitZone Freeze Completion
+        </field>
+
+        <field name="model_id"
+               ref="model_fitzone_membership_freeze"/>
+
+        <field name="state">code</field>
+
+        <field name="code">
+            model._cron_complete_expired_freezes()
+        </field>
+
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+        <field name="active">True</field>
+
+    </record>
+
+</odoo>

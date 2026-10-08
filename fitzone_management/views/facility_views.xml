@@ -8,6 +8,7 @@
             <list>
                 <field name="name"/>
                 <field name="facility_type"/>
+                <field name="booking_method"/>
                 <field name="capacity"/>
                 <field name="state"/>
             </list>
@@ -23,6 +24,7 @@
                     <group>
                         <field name="name"/>
                         <field name="facility_type"/>
+                        <field name="booking_method"/>
                         <field name="capacity"/>
                         <field name="state"/>
                         <field name="description"/>
