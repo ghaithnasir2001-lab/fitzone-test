@@ -17,6 +17,7 @@
         'data/health_sequence.xml',
         'data/membership_sequence.xml',
         'data/membership_cron.xml',
+        'data/injury_rehab_sequence.xml',
 
         'views/membership_package_views.xml',
         'views/membership_subscription_views.xml',
@@ -30,6 +31,7 @@
         'views/booking_views.xml',
         'views/subscriber_views.xml',
         'views/health_views.xml',
+        'views/injury_rehab_views.xml',
         'views/trainer_views.xml',
 
         'data/booking_sequence.xml',

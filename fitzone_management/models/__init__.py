@@ -12,3 +12,8 @@ from . import trainer_schedule
 from . import membership_package
 from . import membership_subscription
 from . import membership_freeze
+from . import injury_cause
+from . import injury
+from . import rehab_file
+from . import treatment
+from . import injury_subscriber

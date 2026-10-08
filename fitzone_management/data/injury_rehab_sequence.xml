@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="seq_fitzone_injury" model="ir.sequence">
+        <field name="name">FitZone Injury</field>
+        <field name="code">fitzone.injury</field>
+        <field name="prefix">INJ-</field>
+        <field name="padding">4</field>
+        <field name="number_next">1</field>
+        <field name="number_increment">1</field>
+    </record>
+
+    <record id="seq_fitzone_rehab_file" model="ir.sequence">
+        <field name="name">FitZone Rehabilitation File</field>
+        <field name="code">fitzone.rehab.file</field>
+        <field name="prefix">REHAB-</field>
+        <field name="padding">4</field>
+        <field name="number_next">1</field>
+        <field name="number_increment">1</field>
+    </record>
+
+    <record id="seq_fitzone_treatment" model="ir.sequence">
+        <field name="name">FitZone Treatment</field>
+        <field name="code">fitzone.treatment</field>
+        <field name="prefix">TRT-</field>
+        <field name="padding">4</field>
+        <field name="number_next">1</field>
+        <field name="number_increment">1</field>
+    </record>
+</odoo>

@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Injury Cause List -->
+    <record id="view_fitzone_injury_cause_list" model="ir.ui.view">
+        <field name="name">fitzone.injury.cause.list</field>
+        <field name="model">fitzone.injury.cause</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="description"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Injury Cause Form -->
+    <record id="view_fitzone_injury_cause_form" model="ir.ui.view">
+        <field name="name">fitzone.injury.cause.form</field>
+        <field name="model">fitzone.injury.cause</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Injury List -->
+    <record id="view_fitzone_injury_list" model="ir.ui.view">
+        <field name="name">fitzone.injury.list</field>
+        <field name="model">fitzone.injury</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="injury_date"/>
+                <field name="cause_id"/>
+                <field name="reported_by"/>
+                <field name="severity"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Injury Form -->
+    <record id="view_fitzone_injury_form" model="ir.ui.view">
+        <field name="name">fitzone.injury.form</field>
+        <field name="model">fitzone.injury</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_refer_to_physiotherapy"
+                            string="Refer to Physiotherapy"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state == 'referred'"/>
+
+                    <field name="state"
+                           widget="statusbar"
+                           statusbar_visible="reported,referred"/>
+                </header>
+
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="partner_id"
+                                   domain="[('is_fitzone_subscriber', '=', True)]"/>
+                            <field name="injury_date"/>
+                            <field name="cause_id"/>
+                            <field name="reported_by"
+                                   domain="[('fitzone_staff_type', '=', 'trainer')]"/>
+                        </group>
+
+                        <group>
+                            <field name="appointment_id"
+                                   domain="[('subscriber_id', '=', partner_id)]"/>
+                            <field name="service_id"/>
+                            <field name="facility_id"/>
+                            <field name="severity"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Injury Details">
+                            <group>
+                                <field name="description"/>
+                                <field name="restrictions"/>
+                                <field name="forbidden_movements"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Rehabilitation File List -->
+    <record id="view_fitzone_rehab_file_list" model="ir.ui.view">
+        <field name="name">fitzone.rehab.file.list</field>
+        <field name="model">fitzone.rehab.file</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="injury_id"/>
+                <field name="physiotherapist_id"/>
+                <field name="opening_date"/>
+                <field name="closing_date"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Rehabilitation File Form -->
+    <record id="view_fitzone_rehab_file_form" model="ir.ui.view">
+        <field name="name">fitzone.rehab.file.form</field>
+        <field name="model">fitzone.rehab.file</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_close"
+                            string="Close Rehabilitation"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state == 'closed'"/>
+
+                    <button name="action_reopen"
+                            string="Reopen"
+                            type="object"
+                            invisible="state == 'open'"/>
+
+                    <field name="state"
+                           widget="statusbar"
+                           statusbar_visible="open,closed"/>
+                </header>
+
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="injury_id"/>
+                            <field name="partner_id"
+                                   domain="[('is_fitzone_subscriber', '=', True)]"/>
+                            <field name="physiotherapist_id"
+                                   domain="[('fitzone_staff_type', '=', 'physiotherapist')]"/>
+                        </group>
+
+                        <group>
+                            <field name="opening_date"/>
+                            <field name="closing_date"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Rehabilitation">
+                            <group>
+                                <field name="diagnosis"/>
+                                <field name="rehabilitation_plan"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Treatment List -->
+    <record id="view_fitzone_treatment_list" model="ir.ui.view">
+        <field name="name">fitzone.treatment.list</field>
+        <field name="model">fitzone.treatment</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="rehab_file_id"/>
+                <field name="physiotherapist_id"/>
+                <field name="booking_id"/>
+                <field name="treatment_type"/>
+                <field name="duration_minutes"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Treatment Form -->
+    <record id="view_fitzone_treatment_form" model="ir.ui.view">
+        <field name="name">fitzone.treatment.form</field>
+        <field name="model">fitzone.treatment</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_complete"
+                            string="Complete"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state != 'scheduled'"/>
+
+                    <button name="action_cancel"
+                            string="Cancel"
+                            type="object"
+                            invisible="state != 'scheduled'"/>
+
+                    <button name="action_reset_to_scheduled"
+                            string="Reset to Scheduled"
+                            type="object"
+                            invisible="state == 'scheduled'"/>
+
+                    <field name="state"
+                           widget="statusbar"
+                           statusbar_visible="scheduled,completed,cancelled"/>
+                </header>
+
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="rehab_file_id"/>
+                            <field name="physiotherapist_id"
+                                   domain="[('fitzone_staff_type', '=', 'physiotherapist')]"/>
+                            <field name="booking_id"/>
+                        </group>
+
+                        <group>
+                            <field name="treatment_type"/>
+                            <field name="duration_minutes"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Treatment Details">
+                            <group>
+                                <field name="description"/>
+                                <field name="notes"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_fitzone_injuries" model="ir.actions.act_window">
+        <field name="name">Injuries</field>
+        <field name="res_model">fitzone.injury</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('partner_id.is_fitzone_subscriber', '=', True)]</field>
+    </record>
+
+    <record id="action_fitzone_injury_causes" model="ir.actions.act_window">
+        <field name="name">Injury Causes</field>
+        <field name="res_model">fitzone.injury.cause</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_fitzone_rehab_files" model="ir.actions.act_window">
+        <field name="name">Rehabilitation Files</field>
+        <field name="res_model">fitzone.rehab.file</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('partner_id.is_fitzone_subscriber', '=', True)]</field>
+    </record>
+
+    <record id="action_fitzone_treatments" model="ir.actions.act_window">
+        <field name="name">Treatments</field>
+        <field name="res_model">fitzone.treatment</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Clinic Menus -->
+    <menuitem
+        id="menu_fitzone_injury_root"
+        name="Injury &amp; Rehabilitation"
+        parent="fitzone_management.menu_fitzone_health_root"
+        sequence="20"/>
+
+    <menuitem
+        id="menu_fitzone_injuries"
+        name="Injuries"
+        parent="menu_fitzone_injury_root"
+        action="action_fitzone_injuries"
+        sequence="10"/>
+
+    <menuitem
+        id="menu_fitzone_rehab_files"
+        name="Rehabilitation Files"
+        parent="menu_fitzone_injury_root"
+        action="action_fitzone_rehab_files"
+        sequence="20"/>
+
+    <menuitem
+        id="menu_fitzone_treatments"
+        name="Treatments"
+        parent="menu_fitzone_injury_root"
+        action="action_fitzone_treatments"
+        sequence="30"/>
+
+    <menuitem
+        id="menu_fitzone_injury_causes"
+        name="Injury Causes"
+        parent="menu_fitzone_injury_root"
+        action="action_fitzone_injury_causes"
+        sequence="40"/>
+
+    <!-- Subscriber Clinic History -->
+    <record id="view_fitzone_contact_form_injury_rehab" model="ir.ui.view">
+        <field name="name">fitzone.contact.form.injury.rehab</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="fitzone_management.view_fitzone_contact_form_health"/>
+        <field name="arch" type="xml">
+
+            <field name="health_assessment_ids" position="after">
+                <separator string="Injury History"/>
+
+                <field name="fitzone_injury_ids" readonly="1">
+                    <list>
+                        <field name="name"/>
+                        <field name="injury_date"/>
+                        <field name="cause_id"/>
+                        <field name="severity"/>
+                        <field name="state"/>
+                    </list>
+                </field>
+
+                <separator string="Rehabilitation History"/>
+
+                <field name="fitzone_rehab_file_ids" readonly="1">
+                    <list>
+                        <field name="name"/>
+                        <field name="injury_id"/>
+                        <field name="physiotherapist_id"/>
+                        <field name="opening_date"/>
+                        <field name="closing_date"/>
+                        <field name="state"/>
+                    </list>
+                </field>
+            </field>
+
+        </field>
+    </record>
+
+</odoo>
