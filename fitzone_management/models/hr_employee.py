@@ -12,6 +12,7 @@ class HrEmployee(models.Model):
     fitzone_staff_type = fields.Selection(
         [
             ('trainer', 'Trainer'),
+            ('nurse', 'Nurse'),
             ('physiotherapist', 'Physiotherapist'),
             ('nutritionist', 'Nutritionist'),
             ('receptionist', 'Receptionist'),

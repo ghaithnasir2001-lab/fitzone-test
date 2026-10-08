@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="seq_fitzone_health_assessment" model="ir.sequence">
+        <field name="name">FitZone Health Assessment</field>
+        <field name="code">fitzone.health.assessment</field>
+        <field name="prefix">assessment-</field>
+        <field name="padding">4</field>
+        <field name="number_increment">1</field>
+    </record>
+
+</odoo>

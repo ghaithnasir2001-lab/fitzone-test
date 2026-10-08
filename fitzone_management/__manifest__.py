@@ -14,8 +14,10 @@
     'data': [
         'security/ir.model.access.csv',
 
+        'data/health_sequence.xml',
         'data/membership_sequence.xml',
         'data/membership_cron.xml',
+
         'views/membership_package_views.xml',
         'views/membership_subscription_views.xml',
         'views/membership_freeze_views.xml',
@@ -27,7 +29,9 @@
         'views/hr_employee_views.xml',
         'views/booking_views.xml',
         'views/subscriber_views.xml',
+        'views/health_views.xml',
         'views/trainer_views.xml',
+
         'data/booking_sequence.xml',
     ],
     'installable': True,
