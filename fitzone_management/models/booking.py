@@ -46,6 +46,18 @@ class FitZoneBooking(models.Model):
         domain=[('is_fitzone_subscriber', '=', True)]
     )
 
+    start_datetime = fields.Datetime(
+        string='Start Date & Time',
+        compute='_compute_booking_datetime',
+        store=True
+    )
+
+    end_datetime = fields.Datetime(
+        string='End Date & Time',
+        compute='_compute_booking_datetime',
+        store=True
+    )
+
     status = fields.Selection(
         [
             ('draft', 'Draft'),
@@ -56,6 +68,37 @@ class FitZoneBooking(models.Model):
         default='draft',
         required=True
     )
+
+    @api.depends(
+        'booking_type',
+        'class_schedule_id.start_datetime',
+        'class_schedule_id.end_datetime',
+        'swimming_slot_id.start_datetime',
+        'swimming_slot_id.end_datetime'
+    )
+    def _compute_booking_datetime(self):
+        for record in self:
+            record.start_datetime = False
+            record.end_datetime = False
+
+            if record.booking_type == 'class' and record.class_schedule_id:
+                record.start_datetime = (
+                    record.class_schedule_id.start_datetime
+                )
+                record.end_datetime = (
+                    record.class_schedule_id.end_datetime
+                )
+
+            elif (
+                record.booking_type == 'swimming'
+                and record.swimming_slot_id
+            ):
+                record.start_datetime = (
+                    record.swimming_slot_id.start_datetime
+                )
+                record.end_datetime = (
+                    record.swimming_slot_id.end_datetime
+                )
 
     @api.onchange('booking_type')
     def _onchange_booking_type(self):
