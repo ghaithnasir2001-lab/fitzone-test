@@ -5,7 +5,7 @@ from odoo.exceptions import ValidationError
 class FitZoneTrainerSchedule(models.Model):
     _name = "fitzone.trainer.schedule"
     _description = "FitZone Trainer Working Schedule"
-    _order = "schedule_date, start_time"
+    _order = "day_of_week, start_time"
 
     trainer_id = fields.Many2one(
         "fitzone.trainer",
@@ -14,8 +14,17 @@ class FitZoneTrainerSchedule(models.Model):
         ondelete="cascade",
     )
 
-    schedule_date = fields.Date(
-        string="Date",
+    day_of_week = fields.Selection(
+        [
+            ("0", "Sunday"),
+            ("1", "Monday"),
+            ("2", "Tuesday"),
+            ("3", "Wednesday"),
+            ("4", "Thursday"),
+            ("5", "Friday"),
+            ("6", "Saturday"),
+        ],
+        string="Day",
         required=True,
     )
 

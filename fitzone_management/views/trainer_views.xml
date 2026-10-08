@@ -2,7 +2,10 @@
 
 <odoo>
 
+    <!-- ========================================================= -->
     <!-- Trainer List View -->
+    <!-- ========================================================= -->
+
     <record id="view_fitzone_trainer_list" model="ir.ui.view">
         <field name="name">fitzone.trainer.list</field>
         <field name="model">fitzone.trainer</field>
@@ -17,18 +20,24 @@
         </field>
     </record>
 
+
+    <!-- ========================================================= -->
     <!-- Trainer Form View -->
+    <!-- ========================================================= -->
+
     <record id="view_fitzone_trainer_form" model="ir.ui.view">
         <field name="name">fitzone.trainer.form</field>
         <field name="model">fitzone.trainer</field>
         <field name="arch" type="xml">
             <form>
                 <sheet>
+
                     <group>
                         <group>
                             <field name="name"/>
                             <field name="specialization"/>
                         </group>
+
                         <group>
                             <field name="phone"/>
                             <field name="email"/>
@@ -37,73 +46,103 @@
                     </group>
 
                     <notebook>
+
+                        <!-- Weekly recurring availability -->
                         <page string="Working Schedule">
+
                             <field name="working_schedule_ids">
+
                                 <list editable="bottom">
-                                    <field name="schedule_date"/>
+                                    <field name="day_of_week"/>
                                     <field name="start_time" widget="float_time"/>
                                     <field name="end_time" widget="float_time"/>
                                     <field name="active"/>
                                 </list>
+
                             </field>
+
                         </page>
+
                     </notebook>
+
                 </sheet>
             </form>
         </field>
     </record>
 
-    <!-- Trainer Schedule List -->
+
+    <!-- ========================================================= -->
+    <!-- Trainer Booking List View -->
+    <!-- Used for the actual Trainer Schedule -->
+    <!-- ========================================================= -->
+
     <record id="view_fitzone_trainer_schedule_list" model="ir.ui.view">
         <field name="name">fitzone.trainer.schedule.list</field>
-        <field name="model">fitzone.trainer.schedule</field>
+        <field name="model">fitzone.trainer.booking</field>
         <field name="arch" type="xml">
             <list>
+
                 <field name="trainer_id"/>
-                <field name="schedule_date"/>
-                <field name="start_time" widget="float_time"/>
-                <field name="end_time" widget="float_time"/>
-                <field name="active"/>
+                <field name="subscriber_id"/>
+                <field name="start_datetime"/>
+                <field name="end_datetime"/>
+                <field name="state"/>
+
             </list>
         </field>
     </record>
 
-    <!-- Trainer Schedule Form -->
-    <record id="view_fitzone_trainer_schedule_form" model="ir.ui.view">
-        <field name="name">fitzone.trainer.schedule.form</field>
-        <field name="model">fitzone.trainer.schedule</field>
+
+    <!-- ========================================================= -->
+    <!-- Trainer Booking Calendar View -->
+    <!-- ========================================================= -->
+
+    <record id="view_fitzone_trainer_schedule_calendar" model="ir.ui.view">
+        <field name="name">fitzone.trainer.schedule.calendar</field>
+        <field name="model">fitzone.trainer.booking</field>
         <field name="arch" type="xml">
-            <form>
-                <sheet>
-                    <group>
-                        <field name="trainer_id"/>
-                        <field name="schedule_date"/>
-                        <field name="start_time" widget="float_time"/>
-                        <field name="end_time" widget="float_time"/>
-                        <field name="active"/>
-                    </group>
-                </sheet>
-            </form>
+
+            <calendar
+                string="Trainer Schedule"
+                date_start="start_datetime"
+                date_stop="end_datetime"
+                color="trainer_id"
+            >
+                <field name="trainer_id"/>
+                <field name="subscriber_id"/>
+                <field name="state"/>
+            </calendar>
+
         </field>
     </record>
 
+
+    <!-- ========================================================= -->
     <!-- Trainer Booking List -->
+    <!-- ========================================================= -->
+
     <record id="view_fitzone_trainer_booking_list" model="ir.ui.view">
         <field name="name">fitzone.trainer.booking.list</field>
         <field name="model">fitzone.trainer.booking</field>
         <field name="arch" type="xml">
             <list>
+
                 <field name="trainer_id"/>
                 <field name="subscriber_id"/>
                 <field name="membership_id"/>
                 <field name="start_datetime"/>
                 <field name="end_datetime"/>
                 <field name="state"/>
+
             </list>
         </field>
     </record>
 
+
+    <!-- ========================================================= -->
     <!-- Trainer Booking Form -->
+    <!-- ========================================================= -->
+
     <record id="view_fitzone_trainer_booking_form" model="ir.ui.view">
         <field name="name">fitzone.trainer.booking.form</field>
         <field name="model">fitzone.trainer.booking</field>
@@ -112,6 +151,7 @@
             <form>
 
                 <header>
+
                     <button
                         name="action_confirm"
                         string="Confirm"
@@ -129,11 +169,13 @@
                     />
 
                     <field name="state" widget="statusbar"/>
+
                 </header>
 
                 <sheet>
 
                     <group>
+
                         <group>
                             <field name="trainer_id"/>
                             <field name="subscriber_id"/>
@@ -144,13 +186,7 @@
                             <field name="start_datetime"/>
                             <field name="end_datetime"/>
                         </group>
-                    </group>
 
-                    <group string="Membership Information">
-                        <field
-                            name="membership_id"
-                            readonly="1"
-                        />
                     </group>
 
                     <group>
@@ -164,28 +200,45 @@
         </field>
     </record>
 
+
+    <!-- ========================================================= -->
     <!-- Trainer Action -->
+    <!-- ========================================================= -->
+
     <record id="action_fitzone_trainers" model="ir.actions.act_window">
         <field name="name">Trainers</field>
         <field name="res_model">fitzone.trainer</field>
         <field name="view_mode">list,form</field>
     </record>
 
-    <!-- Schedule Action -->
+
+    <!-- ========================================================= -->
+    <!-- Trainer Schedule Action -->
+    <!-- Actual booked trainer schedule -->
+    <!-- ========================================================= -->
+
     <record id="action_fitzone_trainer_schedules" model="ir.actions.act_window">
         <field name="name">Trainer Schedules</field>
-        <field name="res_model">fitzone.trainer.schedule</field>
-        <field name="view_mode">list,form</field>
+        <field name="res_model">fitzone.trainer.booking</field>
+        <field name="view_mode">calendar,list,form</field>
     </record>
 
-    <!-- Booking Action -->
+
+    <!-- ========================================================= -->
+    <!-- Trainer Booking Action -->
+    <!-- ========================================================= -->
+
     <record id="action_fitzone_trainer_bookings" model="ir.actions.act_window">
         <field name="name">Trainer Bookings</field>
         <field name="res_model">fitzone.trainer.booking</field>
         <field name="view_mode">list,form</field>
     </record>
 
-    <!-- Trainer Management -->
+
+    <!-- ========================================================= -->
+    <!-- Trainer Management Menu -->
+    <!-- ========================================================= -->
+
     <menuitem
         id="menu_fitzone_trainer_management"
         name="Trainer Management"
@@ -193,7 +246,9 @@
         sequence="30"
     />
 
+
     <!-- Trainers -->
+
     <menuitem
         id="menu_fitzone_trainers"
         name="Trainers"
@@ -202,7 +257,9 @@
         sequence="10"
     />
 
-    <!-- Trainer Schedules -->
+
+    <!-- Actual Trainer Schedules -->
+
     <menuitem
         id="menu_fitzone_trainer_schedules"
         name="Schedules"
@@ -211,7 +268,9 @@
         sequence="20"
     />
 
+
     <!-- Trainer Bookings -->
+
     <menuitem
         id="menu_fitzone_trainer_bookings"
         name="Bookings"
