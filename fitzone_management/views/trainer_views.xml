@@ -2,183 +2,222 @@
 
 <odoo>
 
-<!-- Trainer List View -->
-<record id="view_fitzone_trainer_list" model="ir.ui.view">
-    <field name="name">fitzone.trainer.list</field>
-    <field name="model">fitzone.trainer</field>
-    <field name="arch" type="xml">
-        <list>
-            <field name="name"/>
-            <field name="specialization"/>
-            <field name="phone"/>
-            <field name="email"/>
-            <field name="active"/>
-        </list>
-    </field>
-</record>
+    <!-- Trainer List View -->
+    <record id="view_fitzone_trainer_list" model="ir.ui.view">
+        <field name="name">fitzone.trainer.list</field>
+        <field name="model">fitzone.trainer</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="specialization"/>
+                <field name="phone"/>
+                <field name="email"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
 
-<!-- Trainer Form View -->
-<record id="view_fitzone_trainer_form" model="ir.ui.view">
-    <field name="name">fitzone.trainer.form</field>
-    <field name="model">fitzone.trainer</field>
-    <field name="arch" type="xml">
-        <form>
-            <sheet>
-                <group>
+    <!-- Trainer Form View -->
+    <record id="view_fitzone_trainer_form" model="ir.ui.view">
+        <field name="name">fitzone.trainer.form</field>
+        <field name="model">fitzone.trainer</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
                     <group>
-                        <field name="name"/>
-                        <field name="specialization"/>
+                        <group>
+                            <field name="name"/>
+                            <field name="specialization"/>
+                        </group>
+                        <group>
+                            <field name="phone"/>
+                            <field name="email"/>
+                            <field name="active"/>
+                        </group>
                     </group>
+
+                    <notebook>
+                        <page string="Working Schedule">
+                            <field name="working_schedule_ids">
+                                <list editable="bottom">
+                                    <field name="schedule_date"/>
+                                    <field name="start_time" widget="float_time"/>
+                                    <field name="end_time" widget="float_time"/>
+                                    <field name="active"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Trainer Schedule List -->
+    <record id="view_fitzone_trainer_schedule_list" model="ir.ui.view">
+        <field name="name">fitzone.trainer.schedule.list</field>
+        <field name="model">fitzone.trainer.schedule</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="trainer_id"/>
+                <field name="schedule_date"/>
+                <field name="start_time" widget="float_time"/>
+                <field name="end_time" widget="float_time"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Trainer Schedule Form -->
+    <record id="view_fitzone_trainer_schedule_form" model="ir.ui.view">
+        <field name="name">fitzone.trainer.schedule.form</field>
+        <field name="model">fitzone.trainer.schedule</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
                     <group>
-                        <field name="phone"/>
-                        <field name="email"/>
+                        <field name="trainer_id"/>
+                        <field name="schedule_date"/>
+                        <field name="start_time" widget="float_time"/>
+                        <field name="end_time" widget="float_time"/>
                         <field name="active"/>
                     </group>
-                </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
 
-                <notebook>
-                    <page string="Working Schedule">
-                        <field name="working_schedule_ids">
-                            <list editable="bottom">
-                                <field name="schedule_date"/>
-                                <field name="start_time" widget="float_time"/>
-                                <field name="end_time" widget="float_time"/>
-                                <field name="active"/>
-                            </list>
-                        </field>
-                    </page>
-                </notebook>
-            </sheet>
-        </form>
-    </field>
-</record>
+    <!-- Trainer Booking List -->
+    <record id="view_fitzone_trainer_booking_list" model="ir.ui.view">
+        <field name="name">fitzone.trainer.booking.list</field>
+        <field name="model">fitzone.trainer.booking</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="trainer_id"/>
+                <field name="subscriber_id"/>
+                <field name="membership_id"/>
+                <field name="start_datetime"/>
+                <field name="end_datetime"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
 
-<!-- Trainer Schedule List -->
-<record id="view_fitzone_trainer_schedule_list" model="ir.ui.view">
-    <field name="name">fitzone.trainer.schedule.list</field>
-    <field name="model">fitzone.trainer.schedule</field>
-    <field name="arch" type="xml">
-        <list>
-            <field name="trainer_id"/>
-            <field name="schedule_date"/>
-            <field name="start_time" widget="float_time"/>
-            <field name="end_time" widget="float_time"/>
-            <field name="active"/>
-        </list>
-    </field>
-</record>
+    <!-- Trainer Booking Form -->
+    <record id="view_fitzone_trainer_booking_form" model="ir.ui.view">
+        <field name="name">fitzone.trainer.booking.form</field>
+        <field name="model">fitzone.trainer.booking</field>
+        <field name="arch" type="xml">
 
-<!-- Trainer Schedule Form -->
-<record id="view_fitzone_trainer_schedule_form" model="ir.ui.view">
-    <field name="name">fitzone.trainer.schedule.form</field>
-    <field name="model">fitzone.trainer.schedule</field>
-    <field name="arch" type="xml">
-        <form>
-            <sheet>
-                <group>
-                    <field name="trainer_id"/>
-                    <field name="schedule_date"/>
-                    <field name="start_time" widget="float_time"/>
-                    <field name="end_time" widget="float_time"/>
-                    <field name="active"/>
-                </group>
-            </sheet>
-        </form>
-    </field>
-</record>
+            <form>
 
-<!-- Trainer Booking List -->
-<record id="view_fitzone_trainer_booking_list" model="ir.ui.view">
-    <field name="name">fitzone.trainer.booking.list</field>
-    <field name="model">fitzone.trainer.booking</field>
-    <field name="arch" type="xml">
-        <list>
-            <field name="trainer_id"/>
-            <field name="subscriber_id"/>
-            <field name="start_datetime"/>
-            <field name="end_datetime"/>
-            <field name="state"/>
-        </list>
-    </field>
-</record>
+                <header>
+                    <button
+                        name="action_confirm"
+                        string="Confirm"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state != 'draft'"
+                    />
 
-<!-- Trainer Booking Form -->
-<record id="view_fitzone_trainer_booking_form" model="ir.ui.view">
-    <field name="name">fitzone.trainer.booking.form</field>
-    <field name="model">fitzone.trainer.booking</field>
-    <field name="arch" type="xml">
-        <form>
-            <sheet>
-                <group>
-                    <field name="trainer_id"/>
-                    <field name="subscriber_id"/>
-                    <field name="start_datetime"/>
-                    <field name="end_datetime"/>
-                    <field name="state"/>
-                </group>
+                    <button
+                        name="action_cancel"
+                        string="Cancel"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="state == 'cancelled'"
+                    />
 
-                <group>
-                    <field name="notes"/>
-                </group>
-            </sheet>
-        </form>
-    </field>
-</record>
+                    <field name="state" widget="statusbar"/>
+                </header>
 
-<!-- Trainer Action -->
-<record id="action_fitzone_trainers" model="ir.actions.act_window">
-    <field name="name">Trainers</field>
-    <field name="res_model">fitzone.trainer</field>
-    <field name="view_mode">list,form</field>
-</record>
+                <sheet>
 
-<!-- Schedule Action -->
-<record id="action_fitzone_trainer_schedules" model="ir.actions.act_window">
-    <field name="name">Trainer Schedules</field>
-    <field name="res_model">fitzone.trainer.schedule</field>
-    <field name="view_mode">list,form</field>
-</record>
+                    <group>
+                        <group>
+                            <field name="trainer_id"/>
+                            <field name="subscriber_id"/>
+                            <field name="membership_id"/>
+                        </group>
 
-<!-- Booking Action -->
-<record id="action_fitzone_trainer_bookings" model="ir.actions.act_window">
-    <field name="name">Trainer Bookings</field>
-    <field name="res_model">fitzone.trainer.booking</field>
-    <field name="view_mode">list,form</field>
-</record>
+                        <group>
+                            <field name="start_datetime"/>
+                            <field name="end_datetime"/>
+                        </group>
+                    </group>
 
-<!-- Trainer Management -->
-<menuitem
-    id="menu_fitzone_trainer_management"
-    name="Trainer Management"
-    parent="menu_fitzone_root"
-    sequence="30"
-/>
+                    <group string="Membership Information">
+                        <field
+                            name="membership_id"
+                            readonly="1"
+                        />
+                    </group>
 
-<!-- Trainers -->
-<menuitem
-    id="menu_fitzone_trainers"
-    name="Trainers"
-    parent="menu_fitzone_trainer_management"
-    action="action_fitzone_trainers"
-    sequence="10"
-/>
+                    <group>
+                        <field name="notes"/>
+                    </group>
 
-<!-- Trainer Schedules -->
-<menuitem
-    id="menu_fitzone_trainer_schedules"
-    name="Schedules"
-    parent="menu_fitzone_trainer_management"
-    action="action_fitzone_trainer_schedules"
-    sequence="20"
-/>
+                </sheet>
 
-<!-- Trainer Bookings -->
-<menuitem
-    id="menu_fitzone_trainer_bookings"
-    name="Bookings"
-    parent="menu_fitzone_trainer_management"
-    action="action_fitzone_trainer_bookings"
-    sequence="30"
-/>
+            </form>
+
+        </field>
+    </record>
+
+    <!-- Trainer Action -->
+    <record id="action_fitzone_trainers" model="ir.actions.act_window">
+        <field name="name">Trainers</field>
+        <field name="res_model">fitzone.trainer</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Schedule Action -->
+    <record id="action_fitzone_trainer_schedules" model="ir.actions.act_window">
+        <field name="name">Trainer Schedules</field>
+        <field name="res_model">fitzone.trainer.schedule</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Booking Action -->
+    <record id="action_fitzone_trainer_bookings" model="ir.actions.act_window">
+        <field name="name">Trainer Bookings</field>
+        <field name="res_model">fitzone.trainer.booking</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Trainer Management -->
+    <menuitem
+        id="menu_fitzone_trainer_management"
+        name="Trainer Management"
+        parent="menu_fitzone_root"
+        sequence="30"
+    />
+
+    <!-- Trainers -->
+    <menuitem
+        id="menu_fitzone_trainers"
+        name="Trainers"
+        parent="menu_fitzone_trainer_management"
+        action="action_fitzone_trainers"
+        sequence="10"
+    />
+
+    <!-- Trainer Schedules -->
+    <menuitem
+        id="menu_fitzone_trainer_schedules"
+        name="Schedules"
+        parent="menu_fitzone_trainer_management"
+        action="action_fitzone_trainer_schedules"
+        sequence="20"
+    />
+
+    <!-- Trainer Bookings -->
+    <menuitem
+        id="menu_fitzone_trainer_bookings"
+        name="Bookings"
+        parent="menu_fitzone_trainer_management"
+        action="action_fitzone_trainer_bookings"
+        sequence="30"
+    />
 
 </odoo>

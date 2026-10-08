@@ -22,6 +22,14 @@ class FitZoneTrainerBooking(models.Model):
         ondelete="restrict",
     )
 
+    membership_id = fields.Many2one(
+        "fitzone.membership.subscription",
+        string="Membership",
+        required=True,
+        ondelete="restrict",
+        domain="[('subscriber_id', '=', subscriber_id)]",
+    )
+
     start_datetime = fields.Datetime(
         string="Start Time",
         required=True,
@@ -43,22 +51,18 @@ class FitZoneTrainerBooking(models.Model):
         required=True,
     )
 
-    notes = fields.Text(
-        string="Notes"
-    )
+    notes = fields.Text(string="Notes")
 
     @api.constrains(
         "trainer_id",
         "subscriber_id",
+        "membership_id",
         "start_datetime",
         "end_datetime",
         "state",
     )
     def _check_trainer_booking(self):
         for booking in self:
-            if not booking.trainer_id:
-                continue
-
             if booking.state == "cancelled":
                 continue
 
@@ -75,9 +79,34 @@ class FitZoneTrainerBooking(models.Model):
                     "This trainer is not available for booking."
                 )
 
+            booking._check_membership()
             booking._check_booking_conflict()
             booking._check_subscriber_conflict()
             booking._check_trainer_availability()
+
+    def _check_membership(self):
+        for booking in self:
+            membership = booking.membership_id
+
+            if not membership:
+                raise ValidationError(
+                    "A membership is required for personal training."
+                )
+
+            if membership.subscriber_id != booking.subscriber_id:
+                raise ValidationError(
+                    "The selected membership does not belong to this subscriber."
+                )
+
+            if membership.status != "active":
+                raise ValidationError(
+                    "The membership must be active."
+                )
+
+            if membership.remaining_pt_sessions <= 0:
+                raise ValidationError(
+                    "This membership has no remaining personal training sessions."
+                )
 
     def _check_booking_conflict(self):
         for booking in self:
@@ -100,7 +129,6 @@ class FitZoneTrainerBooking(models.Model):
     def _check_subscriber_conflict(self):
         for booking in self:
 
-            # Check conflicts with other trainer bookings
             conflicting_trainer_booking = self.search(
                 [
                     ("id", "!=", booking.id),
@@ -117,7 +145,6 @@ class FitZoneTrainerBooking(models.Model):
                     "This subscriber already has another booking during this time."
                 )
 
-            # Check conflicts with class and swimming bookings
             conflicting_booking = self.env["fitzone.booking"].search(
                 [
                     ("subscriber_id", "=", booking.subscriber_id.id),
@@ -135,6 +162,7 @@ class FitZoneTrainerBooking(models.Model):
 
     def _check_trainer_availability(self):
         for booking in self:
+
             booking_date = fields.Datetime.context_timestamp(
                 booking,
                 booking.start_datetime,
@@ -180,3 +208,30 @@ class FitZoneTrainerBooking(models.Model):
                 raise ValidationError(
                     "The trainer is not available during this time."
                 )
+
+    def action_confirm(self):
+        for booking in self:
+
+            if booking.state != "draft":
+                continue
+
+            booking._check_membership()
+            booking._check_booking_conflict()
+            booking._check_subscriber_conflict()
+            booking._check_trainer_availability()
+
+            booking.membership_id.used_pt_sessions += 1
+            booking.state = "confirmed"
+
+        return True
+
+    def action_cancel(self):
+        for booking in self:
+
+            if booking.state == "confirmed":
+                if booking.membership_id.used_pt_sessions > 0:
+                    booking.membership_id.used_pt_sessions -= 1
+
+            booking.state = "cancelled"
+
+        return True
