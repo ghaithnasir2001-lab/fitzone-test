@@ -26,18 +26,26 @@ class IrMailServer(models.Model):
         inline_attachments = []
 
         for attachment in attachments or []:
-            if len(attachment) != 3:
+            if len(attachment) == 2:
+                fname, fcontent = attachment
+                mime = (
+                    'image/png'
+                    if fname.startswith('__fitzone_inline_barcode__')
+                    else None
+                )
+            elif len(attachment) == 3:
+                fname, fcontent, mime = attachment
+            else:
                 normal_attachments.append(attachment)
                 continue
 
-            fname, fcontent, mime = attachment
-
             if fname.startswith('__fitzone_inline_barcode__'):
-                inline_attachments.append(
-                    (fname, fcontent, mime)
-                )
+                inline_attachments.append((fname, fcontent, mime))
             else:
-                normal_attachments.append(attachment)
+                if len(attachment) == 2:
+                    normal_attachments.append(attachment)
+                else:
+                    normal_attachments.append((fname, fcontent, mime))
 
         message = super()._build_email__(
             email_from=email_from,
@@ -73,7 +81,7 @@ class IrMailServer(models.Model):
         for fname, fcontent, mime in inline_attachments:
             barcode_id = fname.replace(
                 '__fitzone_inline_barcode__',
-                ''
+                '',
             ).rsplit('.', 1)[0]
 
             cid = f'fitzone_barcode_{barcode_id}'

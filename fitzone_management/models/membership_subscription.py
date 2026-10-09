@@ -953,6 +953,55 @@ class FitZoneMembershipSubscription(models.Model):
                 'membership': membership,
             }
 
+        today = fields.Date.context_today(self)
+
+        if membership.expiration_date and membership.expiration_date < today:
+            membership.status = 'expired'
+            return {
+                'allowed': False,
+                'reason': 'Membership has expired.',
+                'membership': membership,
+            }
+
+        active_freeze = self.env[
+            'fitzone.membership.freeze'
+        ].search(
+            [
+                ('subscription_id', '=', membership.id),
+                ('status', '=', 'active'),
+                ('start_date', '<=', today),
+                ('end_date', '>=', today),
+            ],
+            limit=1,
+        )
+
+        if active_freeze:
+            return {
+                'allowed': False,
+                'reason': 'Membership is frozen.',
+                'membership': membership,
+            }
+
+        overdue_second_installment = membership.installment_ids.filtered(
+            lambda installment: (
+                installment.installment_number == '2'
+                and installment.due_date
+                and installment.due_date < today
+                and (
+                    not installment.invoice_id
+                    or installment.invoice_id.state != 'posted'
+                    or installment.invoice_id.amount_residual > 0.01
+                )
+            )
+        )
+
+        if overdue_second_installment:
+            return {
+                'allowed': False,
+                'reason': 'Second installment is overdue. Check-in is not allowed.',
+                'membership': membership,
+            }
+
         return {
             'allowed': True,
             'reason': 'Membership is active.',
