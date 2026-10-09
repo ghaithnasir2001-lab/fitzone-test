@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Clinic Assessment List -->
+    <record id="view_fitzone_health_assessment_list" model="ir.ui.view">
+        <field name="name">fitzone.health.assessment.list</field>
+        <field name="model">fitzone.health.assessment</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="assessment_type"/>
+                <field name="assessment_date"/>
+                <field name="performed_by"/>
+                <field name="state"/>
+                <field name="health_status"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Clinic Assessment Form -->
+    <record id="view_fitzone_health_assessment_form" model="ir.ui.view">
+        <field name="name">fitzone.health.assessment.form</field>
+        <field name="model">fitzone.health.assessment</field>
+        <field name="arch" type="xml">
+            <form>
+
+                <header>
+                    <button name="action_mark_completed"
+                            string="Mark as Completed"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state == 'completed'"/>
+
+                    <button name="action_reset_to_draft"
+                            string="Reset to Draft"
+                            type="object"
+                            invisible="state == 'draft'"/>
+
+                    <field name="state"
+                           widget="statusbar"
+                           statusbar_visible="draft,completed"/>
+                </header>
+
+                <sheet>
+
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="partner_id"
+                                   domain="[('is_fitzone_subscriber', '=', True)]"
+                                   readonly="state == 'completed'"/>
+
+                            <field name="assessment_type"
+                                   readonly="state == 'completed'"/>
+
+                            <field name="assessment_date"
+                                   readonly="state == 'completed'"/>
+                        </group>
+
+                        <group>
+                            <field name="performed_by"
+                                   domain="[('fitzone_staff_type', '=', 'nurse')]"
+                                   readonly="state == 'completed'"/>
+
+
+                            <field name="health_status"
+                                   readonly="state == 'completed'"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+
+                        <page string="Medical Information">
+                            <group>
+                                <field name="medical_notes"
+                                       readonly="state == 'completed'"/>
+
+                                <field name="restrictions"
+                                       readonly="state == 'completed'"/>
+
+                                <field name="notes"
+                                       readonly="state == 'completed'"/>
+                            </group>
+                        </page>
+
+                        <page string="Measurements">
+                            <separator string="Subscriber InBody Measurements"/>
+
+                            <field name="measurement_ids"
+                                   context="{'default_partner_id': partner_id}"
+                                   readonly="state == 'completed'">
+                                <list editable="bottom">
+                                    <field name="measurement_date"/>
+                                    <field name="weight"/>
+                                    <field name="height"/>
+                                    <field name="bmi"/>
+                                    <field name="body_fat"/>
+                                    <field name="muscle_mass"/>
+                                    <field name="blood_pressure"/>
+                                    <field name="recorded_by"/>
+                                </list>
+                            </field>
+                        </page>
+
+                    </notebook>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Clinic Measurement List -->
+    <record id="view_fitzone_health_measurement_list" model="ir.ui.view">
+        <field name="name">fitzone.health.measurement.list</field>
+        <field name="model">fitzone.health.measurement</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="partner_id"/>
+                <field name="assessment_id"/>
+                <field name="measurement_date"/>
+                <field name="weight"/>
+                <field name="height"/>
+                <field name="bmi"/>
+                <field name="body_fat"/>
+                <field name="muscle_mass"/>
+                <field name="blood_pressure"/>
+                <field name="recorded_by"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Clinic Measurement Form -->
+    <record id="view_fitzone_health_measurement_form" model="ir.ui.view">
+        <field name="name">fitzone.health.measurement.form</field>
+        <field name="model">fitzone.health.measurement</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+
+                    <group>
+                        <group>
+                            <field name="partner_id"
+                                   domain="[('is_fitzone_subscriber', '=', True)]"/>
+
+                            <field name="assessment_id"
+                                   domain="[('partner_id', '=', partner_id)]"/>
+
+                            <field name="measurement_date"/>
+                            <field name="recorded_by"/>
+                        </group>
+                    </group>
+
+                    <separator string="Subscriber InBody Measurements"/>
+
+                    <group>
+                        <group>
+                            <field name="weight"/>
+                            <field name="height"/>
+                            <field name="bmi"/>
+                        </group>
+
+                        <group>
+                            <field name="body_fat"/>
+                            <field name="muscle_mass"/>
+                            <field name="blood_pressure"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <field name="notes"/>
+                    </group>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Clinic Assessment Action -->
+    <record id="action_fitzone_health_assessments" model="ir.actions.act_window">
+        <field name="name">Health Assessments</field>
+        <field name="res_model">fitzone.health.assessment</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('partner_id.is_fitzone_subscriber', '=', True)]</field>
+    </record>
+
+    <!-- Clinic Measurement Action -->
+    <record id="action_fitzone_health_measurements" model="ir.actions.act_window">
+        <field name="name">Health Measurements</field>
+        <field name="res_model">fitzone.health.measurement</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('partner_id.is_fitzone_subscriber', '=', True)]</field>
+    </record>
+
+    <!-- Clinic Menus -->
+    <menuitem
+        id="menu_fitzone_health_root"
+        name="Clinic"
+        parent="fitzone_management.menu_fitzone_root"
+        sequence="20"
+    />
+
+    <menuitem
+        id="menu_fitzone_health_assessments"
+        name="Health Assessments"
+        parent="menu_fitzone_health_root"
+        action="action_fitzone_health_assessments"
+        sequence="10"
+    />
+
+
+    <!-- Subscriber Contact Form Integration -->
+    <record id="view_fitzone_contact_form_health" model="ir.ui.view">
+        <field name="name">fitzone.contact.form.health</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+
+            <notebook position="inside">
+                <page string="Clinic"
+                      invisible="not is_fitzone_subscriber">
+
+                    <group>
+                        <!-- Temporary OwlError diagnostic: hide computed status -->
+                    </group>
+
+                    <field name="health_assessment_ids" readonly="1">
+                        <list>
+                            <field name="name"/>
+                        </list>
+                    </field>
+
+                </page>
+            </notebook>
+
+        </field>
+    </record>
+
+</odoo>

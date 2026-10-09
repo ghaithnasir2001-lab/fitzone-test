@@ -5,6 +5,7 @@ from . import swimming_slot
 from . import hr_employee
 from . import booking
 from . import subscriber
+from . import health_assessment
 from . import trainer
 from . import trainer_booking
 from . import trainer_schedule

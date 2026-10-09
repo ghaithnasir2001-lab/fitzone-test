@@ -1,4 +1,5 @@
-from odoo import fields, models
+from odoo import api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class FitZoneTrainer(models.Model):
@@ -33,3 +34,28 @@ class FitZoneTrainer(models.Model):
         "trainer_id",
         string="Working Schedule"
     )
+
+    @api.constrains("email", "phone")
+    def _check_unique_contact_info(self):
+        for trainer in self:
+            if trainer.email:
+                duplicate_email = self.search([
+                    ("id", "!=", trainer.id),
+                    ("email", "=", trainer.email),
+                ], limit=1)
+
+                if duplicate_email:
+                    raise ValidationError(
+                        "A trainer with this email already exists."
+                    )
+
+            if trainer.phone:
+                duplicate_phone = self.search([
+                    ("id", "!=", trainer.id),
+                    ("phone", "=", trainer.phone),
+                ], limit=1)
+
+                if duplicate_phone:
+                    raise ValidationError(
+                        "A trainer with this phone number already exists."
+                    )

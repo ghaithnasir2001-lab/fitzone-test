@@ -15,6 +15,7 @@
     'data': [
         'security/ir.model.access.csv',
 
+        'data/health_sequence.xml',
         'data/membership_sequence.xml',
         'data/checkin_sequence.xml',
         'data/membership_cron.xml',
@@ -32,7 +33,9 @@
         'views/hr_employee_views.xml',
         'views/booking_views.xml',
         'views/subscriber_views.xml',
+        'views/health_views.xml',
         'views/trainer_views.xml',
+
         'data/booking_sequence.xml',
     ],
     'assets': {
