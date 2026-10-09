@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-    <!-- Membership Subscription Sequence -->
     <record id="seq_fitzone_membership_subscription" model="ir.sequence">
         <field name="name">FitZone Membership Subscription</field>
         <field name="code">fitzone.membership.subscription</field>
@@ -10,7 +9,6 @@
         <field name="company_id" eval="False"/>
     </record>
 
-    <!-- Membership Freeze Sequence -->
     <record id="seq_fitzone_membership_freeze" model="ir.sequence">
         <field name="name">FitZone Membership Freeze</field>
         <field name="code">fitzone.membership.freeze</field>

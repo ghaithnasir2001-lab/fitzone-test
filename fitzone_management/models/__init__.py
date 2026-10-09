@@ -12,3 +12,4 @@ from . import trainer_schedule
 from . import membership_package
 from . import membership_subscription
 from . import membership_freeze
+from . import membership_payment

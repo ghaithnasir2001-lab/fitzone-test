@@ -1,7 +1,7 @@
 from dateutil.relativedelta import relativedelta
 
 from odoo import api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 
 
 class FitZoneMembershipSubscription(models.Model):
@@ -19,7 +19,7 @@ class FitZoneMembershipSubscription(models.Model):
     subscriber_id = fields.Many2one(
         'res.partner',
         string='Subscriber',
-        required=True,
+
         ondelete='restrict',
     )
 
@@ -94,6 +94,74 @@ class FitZoneMembershipSubscription(models.Model):
         compute='_compute_final_price',
         store=True,
     )
+
+    payment_plan = fields.Selection(
+        [
+            ('full', 'Full Payment'),
+            ('installments', 'Two Installments'),
+        ],
+        string='Payment Plan',
+        required=True,
+        default='full',
+    )
+
+    first_installment_amount = fields.Monetary(
+        string='First Installment Amount',
+        currency_field='currency_id',
+    )
+
+    second_installment_due_date = fields.Date(
+        string='Second Installment Due Date',
+    )
+
+    second_installment_amount = fields.Monetary(
+        string='Second Installment Amount',
+        currency_field='currency_id',
+        compute='_compute_second_installment_amount',
+    )
+
+    installment_ids = fields.One2many(
+        'fitzone.membership.installment',
+        'subscription_id',
+        string='Installments',
+        copy=False,
+    )
+
+    invoice_id = fields.Many2one(
+        'account.move',
+        string='Full Membership Invoice',
+        readonly=True,
+        copy=False,
+        ondelete='restrict',
+    )
+
+    payment_access_blocked = fields.Boolean(
+        string='Access Blocked Due to Overdue Payment',
+        compute='_compute_payment_access_blocked',
+    )
+
+    @api.depends('final_price', 'first_installment_amount')
+    def _compute_second_installment_amount(self):
+        for record in self:
+            record.second_installment_amount = max(
+                record.final_price - record.first_installment_amount,
+                0.0,
+            )
+
+    @api.depends(
+        'payment_plan',
+        'installment_ids.payment_status',
+        'installment_ids.installment_number',
+        'installment_ids.due_date',
+        'installment_ids.invoice_id.amount_residual',
+    )
+    def _compute_payment_access_blocked(self):
+        for record in self:
+            record.payment_access_blocked = any(
+                line.installment_number == '2'
+                and line.payment_status == 'overdue'
+                for line in record.installment_ids
+            )
 
     allowed_freeze_days = fields.Integer(
         string='Allowed Freeze Days',
@@ -192,7 +260,8 @@ class FitZoneMembershipSubscription(models.Model):
     def create(self, vals_list):
 
         for vals in vals_list:
-
+            if not vals.get('subscriber_id'):
+                raise ValidationError("Please select a subscriber before creating a membership subscription.")
             if vals.get('name', 'New') == 'New':
                 vals['name'] = self.env['ir.sequence'].next_by_code(
                     'fitzone.membership.subscription'
@@ -288,8 +357,202 @@ class FitZoneMembershipSubscription(models.Model):
                 else:
                     record.status = 'active'
 
+                if 'second_installment_due_date' in vals:
+                    for subscription in self:
+                        due_date = subscription.second_installment_due_date
+
+                        if not due_date:
+                            continue
+
+                        second_installment = self.env[
+                            'fitzone.membership.installment'
+                        ].search([
+                            ('subscription_id', '=', subscription.id),
+                            ('installment_number', '=', '2'),
+                        ], limit=1)
+
+                        if (
+                            second_installment
+                            and second_installment.due_date != due_date
+                        ):
+                            second_installment.write({
+                                'due_date': due_date,
+                            })
         return result
 
+
+    def action_create_payment_plan(self):
+        for subscription in self:
+            if subscription.payment_plan != 'installments':
+                raise UserError(
+                    'Select the two-installment payment plan first.'
+                )
+
+            if subscription.installment_ids:
+                raise UserError(
+                    'A payment plan already exists for this membership.'
+                )
+
+            if subscription.invoice_id:
+                raise UserError(
+                    'A full membership invoice already exists.'
+                )
+
+            duration = subscription.package_id.duration_months
+
+            if duration < 3:
+                raise ValidationError(
+                    'Installments are allowed only for memberships '
+                    'of three months or longer.'
+                )
+
+
+            package = subscription.package_id
+
+            monthly_domain = [
+                ('duration_months', '=', 1),
+                ('currency_id', '=', package.currency_id.id),
+                ('active', '=', True),
+            ]
+
+            if package.is_all_inclusive or package.package_type == 'all_inclusive':
+                monthly_domain += [
+                    '|',
+                    ('is_all_inclusive', '=', True),
+                    ('package_type', '=', 'all_inclusive'),
+                ]
+            elif package.package_type == 'private':
+                monthly_domain += [
+                    ('package_type', '=', 'private'),
+                    ('is_all_inclusive', '=', False),
+                ]
+            else:
+                monthly_domain += [
+                    ('package_type', '=', 'general'),
+                    ('is_all_inclusive', '=', False),
+                ]
+
+            monthly_package = self.env[
+                'fitzone.membership.package'
+            ].search(
+                monthly_domain,
+                limit=1,
+            )
+
+            if not monthly_package:
+                raise UserError(
+                    'Create an active one-month package of the same type '
+                    'before creating the installment plan.'
+                )
+
+            minimum_first_amount = monthly_package.price
+
+            first_amount = subscription.first_installment_amount
+            second_amount = (
+                subscription.final_price - first_amount
+            )
+
+            if first_amount < minimum_first_amount:
+                raise ValidationError(
+                    'The first installment must be at least the price '
+                    'of a one-month package of the same type: '
+                    f'{minimum_first_amount:.2f}.'
+                )
+
+            if first_amount <= 0 or second_amount <= 0:
+                raise ValidationError(
+                    'Both installments must have a positive amount.'
+                )
+
+            if not subscription.second_installment_due_date:
+                raise ValidationError(
+                    'Set the second installment due date first.'
+                )
+
+            if (
+                subscription.second_installment_due_date
+                < subscription.subscription_date
+            ):
+                raise ValidationError(
+                    'The second installment due date cannot be before '
+                    'the subscription date.'
+                )
+
+            self.env['fitzone.membership.installment'].create([
+                {
+                    'subscription_id': subscription.id,
+                    'installment_number': '1',
+                    'amount': first_amount,
+                    'due_date': subscription.subscription_date,
+                },
+                {
+                    'subscription_id': subscription.id,
+                    'installment_number': '2',
+                    'amount': second_amount,
+                    'due_date': subscription.second_installment_due_date,
+                },
+            ])
+
+        return True
+
+    def action_create_full_invoice(self):
+        for subscription in self:
+            if subscription.payment_plan != 'full':
+                raise UserError(
+                    'This membership uses installments. '
+                    'Create invoices from its installment records.'
+                )
+
+            if subscription.invoice_id:
+                raise UserError(
+                    'A full membership invoice already exists.'
+                )
+
+            company = self.env.company
+
+            income_account = self.env['account.account'].search([
+                ('company_ids', 'in', [company.id]),
+                ('account_type', 'in', ['income', 'income_other']),
+            ], limit=1)
+
+            if not income_account:
+                raise UserError(
+                    'Configure an income account in Odoo Accounting first.'
+                )
+
+            tax = self.env['account.tax'].search([
+                ('company_id', '=', company.id),
+                ('type_tax_use', '=', 'sale'),
+                ('amount', '=', 16.0),
+                ('active', '=', True),
+            ], limit=1)
+
+            if not tax:
+                raise UserError(
+                    'Configure the 16% sales tax in Odoo Accounting first'
+                )
+
+            invoice = self.env['account.move'].create({
+                'move_type': 'out_invoice',
+                'partner_id': subscription.subscriber_id.id,
+                'company_id': company.id,
+                'invoice_date': fields.Date.context_today(subscription),
+                'invoice_line_ids': [
+                    fields.Command.create({
+                        'name': (
+                            f'{subscription.name} - Membership'
+                        ),
+                        'quantity': 1.0,
+                        'price_unit': subscription.final_price / 1.16,
+                        'account_id': income_account.id,
+                        'tax_ids': [fields.Command.set([tax.id])],
+                    }),
+                ],
+            })
+
+            invoice.action_post()
+            subscription.invoice_id = invoice.id
+        return True
 
     @api.onchange(
         'subscription_date',
