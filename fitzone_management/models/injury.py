@@ -113,5 +113,18 @@ class FitZoneInjury(models.Model):
                 )
 
     def action_refer_to_physiotherapy(self):
+        rehab_file_model = self.env['fitzone.rehab.file']
+
         for record in self:
+            existing_rehab_file = rehab_file_model.search(
+                [('injury_id', '=', record.id)],
+                limit=1,
+            )
+
+            if not existing_rehab_file:
+                rehab_file_model.create({
+                    'injury_id': record.id,
+                    'partner_id': record.partner_id.id,
+                })
+
             record.state = 'referred'

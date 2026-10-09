@@ -35,7 +35,6 @@ class FitZoneRehabFile(models.Model):
     physiotherapist_id = fields.Many2one(
         'hr.employee',
         string='Physiotherapist',
-        required=True,
         ondelete='restrict',
     )
 

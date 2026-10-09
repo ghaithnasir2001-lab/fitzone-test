@@ -48,6 +48,18 @@
                             required="booking_type == 'swimming'"
                         />
 
+                        <field
+                            name="physiotherapy_start_datetime"
+                            invisible="booking_type != 'physiotherapy'"
+                            required="booking_type == 'physiotherapy'"
+                        />
+
+                        <field
+                            name="physiotherapy_end_datetime"
+                            invisible="booking_type != 'physiotherapy'"
+                            required="booking_type == 'physiotherapy'"
+                        />
+
                         <field name="status"/>
 
                     </group>

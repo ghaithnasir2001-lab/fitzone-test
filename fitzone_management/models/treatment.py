@@ -66,7 +66,7 @@ class FitZoneTreatment(models.Model):
         copy=False,
     )
 
-    @api.constrains('physiotherapist_id')
+    @api.constrains('physiotherapist_id', 'rehab_file_id')
     def _check_physiotherapist(self):
         for record in self:
             if (
@@ -78,11 +78,26 @@ class FitZoneTreatment(models.Model):
                     'The selected employee must be a Physiotherapist.'
                 )
 
+            if (
+                record.rehab_file_id
+                and record.physiotherapist_id
+                and record.rehab_file_id.physiotherapist_id
+                != record.physiotherapist_id
+            ):
+                raise ValidationError(
+                    'The treatment physiotherapist must match the rehabilitation file physiotherapist.'
+                )
+
     @api.constrains('rehab_file_id', 'booking_id')
     def _check_booking_subscriber(self):
         for record in self:
             if not record.rehab_file_id or not record.booking_id:
                 continue
+
+            if record.booking_id.booking_type != 'physiotherapy':
+                raise ValidationError(
+                    'Treatment bookings must be Physiotherapy bookings.'
+                )
 
             if (
                 record.booking_id.subscriber_id
@@ -102,10 +117,89 @@ class FitZoneTreatment(models.Model):
 
     def action_complete(self):
         for record in self:
+
             if record.state == 'cancelled':
                 raise ValidationError(
                     'A cancelled treatment cannot be completed.'
                 )
+
+            if record.state == 'completed':
+                continue
+
+            usage_date = (
+                fields.Datetime.to_datetime(
+                    record.booking_id.start_datetime
+                ).date()
+                if record.booking_id
+                and record.booking_id.start_datetime
+                else fields.Date.context_today(record)
+            )
+
+            subscription = self.env[
+                'fitzone.membership.subscription'
+            ].search(
+                [
+                    (
+                        'subscriber_id',
+                        '=',
+                        record.rehab_file_id.partner_id.id,
+                    ),
+                    (
+                        'activation_date',
+                        '<=',
+                        usage_date,
+                    ),
+                    (
+                        'expiration_date',
+                        '>=',
+                        usage_date,
+                    ),
+                    (
+                        'status',
+                        '!=',
+                        'cancelled',
+                    ),
+                    (
+                        'package_id.included_physio_sessions_per_month',
+                        '>',
+                        0,
+                    ),
+                ],
+                order='activation_date desc, id desc',
+                limit=1,
+            )
+
+            if subscription:
+
+                period_start, period_end = (
+                    subscription._get_physio_period(
+                        usage_date
+                    )
+                )
+
+                if period_start and period_end:
+
+                    used_sessions = (
+                        subscription
+                        ._count_completed_physio_treatments(
+                            period_start,
+                            period_end,
+                        )
+                    )
+
+                    monthly_allowance = (
+                        subscription.package_id
+                        .included_physio_sessions_per_month
+                    )
+
+                    if used_sessions >= monthly_allowance:
+                        raise ValidationError(
+                            'The subscriber has used all included '
+                            'physiotherapy sessions for this '
+                            'membership month. '
+                            'Unused sessions do not roll over.'
+                        )
+
             record.state = 'completed'
 
     def action_cancel(self):

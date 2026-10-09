@@ -1,3 +1,5 @@
+from datetime import datetime, time
+
 from dateutil.relativedelta import relativedelta
 
 from odoo import api, fields, models
@@ -138,14 +140,15 @@ class FitZoneMembershipSubscription(models.Model):
     )
 
     used_physio_sessions = fields.Integer(
-        string='Used Physiotherapy Sessions',
-        default=0,
+        string='Used Physiotherapy Sessions This Month',
+        compute='_compute_used_physio_sessions',
+        readonly=True,
     )
 
     remaining_physio_sessions = fields.Integer(
-        string='Remaining Physiotherapy Sessions',
+        string='Remaining Physiotherapy Sessions This Month',
         compute='_compute_remaining_physio_sessions',
-        store=True,
+        readonly=True,
     )
 
     included_nutrition_consultations = fields.Integer(
@@ -325,7 +328,6 @@ class FitZoneMembershipSubscription(models.Model):
         'discount',
         'used_freeze_days',
         'used_pt_sessions',
-        'used_physio_sessions',
         'used_nutrition_consultations',
     )
     def _onchange_non_negative_values(self):
@@ -340,9 +342,6 @@ class FitZoneMembershipSubscription(models.Model):
 
             if record.used_pt_sessions < 0:
                 record.used_pt_sessions = 0
-
-            if record.used_physio_sessions < 0:
-                record.used_physio_sessions = 0
 
             if record.used_nutrition_consultations < 0:
                 record.used_nutrition_consultations = 0
@@ -393,16 +392,135 @@ class FitZoneMembershipSubscription(models.Model):
     def _compute_included_physio_sessions(self):
 
         for record in self:
+            record.included_physio_sessions = (
+                record.package_id.included_physio_sessions_per_month
+                if record.package_id
+                else 0
+            )
 
-            if record.package_id:
+    def _get_physio_period(self, usage_date):
+        self.ensure_one()
 
-                record.included_physio_sessions = (
-                    record.package_id.included_physio_sessions_per_month
-                    * record.package_id.duration_months
+        if not self.activation_date or not self.expiration_date:
+            return False, False
+
+        usage_date = fields.Date.to_date(usage_date)
+        activation_date = fields.Date.to_date(
+            self.activation_date
+        )
+        expiration_date = fields.Date.to_date(
+            self.expiration_date
+        )
+
+        if usage_date < activation_date or usage_date > expiration_date:
+            return False, False
+
+        months_elapsed = (
+            (usage_date.year - activation_date.year) * 12
+            + usage_date.month
+            - activation_date.month
+        )
+
+        period_start = (
+            activation_date
+            + relativedelta(months=months_elapsed)
+        )
+
+        period_end = (
+            period_start
+            + relativedelta(months=1)
+            - relativedelta(days=1)
+        )
+
+        if period_end > expiration_date:
+            period_end = expiration_date
+
+        return period_start, period_end
+
+    def _count_completed_physio_treatments(
+        self,
+        period_start,
+        period_end,
+    ):
+        self.ensure_one()
+
+        if not period_start or not period_end:
+            return 0
+
+        start_datetime = datetime.combine(
+            period_start,
+            time.min,
+        )
+
+        end_datetime = datetime.combine(
+            period_end,
+            time.max,
+        )
+
+        return self.env['fitzone.treatment'].sudo().search_count(
+            [
+                (
+                    'rehab_file_id.partner_id',
+                    '=',
+                    self.subscriber_id.id,
+                ),
+                (
+                    'state',
+                    '=',
+                    'completed',
+                ),
+                (
+                    'booking_id.booking_type',
+                    '=',
+                    'physiotherapy',
+                ),
+                (
+                    'booking_id.start_datetime',
+                    '>=',
+                    start_datetime,
+                ),
+                (
+                    'booking_id.start_datetime',
+                    '<=',
+                    end_datetime,
+                ),
+            ]
+        )
+
+    @api.depends(
+        'subscriber_id',
+        'package_id',
+        'activation_date',
+        'expiration_date',
+        'status',
+    )
+    def _compute_used_physio_sessions(self):
+
+        for record in self:
+
+            today = fields.Date.context_today(record)
+
+            if (
+                not record.subscriber_id
+                or record.status == 'cancelled'
+            ):
+                record.used_physio_sessions = 0
+                continue
+
+            period_start, period_end = record._get_physio_period(
+                today
+            )
+
+            if not period_start or not period_end:
+                record.used_physio_sessions = 0
+                continue
+
+            record.used_physio_sessions = (
+                record._count_completed_physio_treatments(
+                    period_start,
+                    period_end,
                 )
-
-            else:
-                record.included_physio_sessions = 0
+            )
 
     @api.depends(
         'included_physio_sessions',
@@ -464,7 +582,6 @@ class FitZoneMembershipSubscription(models.Model):
         'discount',
         'used_freeze_days',
         'used_pt_sessions',
-        'used_physio_sessions',
         'used_nutrition_consultations',
     )
     def _check_non_negative_values(self):
@@ -484,11 +601,6 @@ class FitZoneMembershipSubscription(models.Model):
             if record.used_pt_sessions < 0:
                 raise ValidationError(
                     'Used PT sessions cannot be negative.'
-                )
-
-            if record.used_physio_sessions < 0:
-                raise ValidationError(
-                    'Used physiotherapy sessions cannot be negative.'
                 )
 
             if record.used_nutrition_consultations < 0:
@@ -520,23 +632,6 @@ class FitZoneMembershipSubscription(models.Model):
             if record.used_pt_sessions > record.included_pt_sessions:
                 raise ValidationError(
                     'Used PT sessions cannot exceed included PT sessions.'
-                )
-
-    @api.constrains(
-        'used_physio_sessions',
-        'included_physio_sessions',
-    )
-    def _check_used_physio_sessions(self):
-
-        for record in self:
-
-            if (
-                record.used_physio_sessions
-                > record.included_physio_sessions
-            ):
-                raise ValidationError(
-                    'Used physiotherapy sessions cannot exceed '
-                    'included physiotherapy sessions.'
                 )
 
     @api.constrains(

@@ -19,6 +19,7 @@ class FitZoneBooking(models.Model):
         [
             ('class', 'Class'),
             ('swimming', 'Swimming'),
+            ('physiotherapy', 'Physiotherapy'),
         ],
         string='Booking Type',
         required=True
@@ -37,6 +38,14 @@ class FitZoneBooking(models.Model):
     swimming_slot_id = fields.Many2one(
         'fitzone.swimming.slot',
         string='Swimming Slot'
+    )
+
+    physiotherapy_start_datetime = fields.Datetime(
+        string='Physiotherapy Start Date & Time'
+    )
+
+    physiotherapy_end_datetime = fields.Datetime(
+        string='Physiotherapy End Date & Time'
     )
 
     subscriber_id = fields.Many2one(
@@ -74,7 +83,9 @@ class FitZoneBooking(models.Model):
         'class_schedule_id.start_datetime',
         'class_schedule_id.end_datetime',
         'swimming_slot_id.start_datetime',
-        'swimming_slot_id.end_datetime'
+        'swimming_slot_id.end_datetime',
+        'physiotherapy_start_datetime',
+        'physiotherapy_end_datetime'
     )
     def _compute_booking_datetime(self):
         for record in self:
@@ -100,14 +111,31 @@ class FitZoneBooking(models.Model):
                     record.swimming_slot_id.end_datetime
                 )
 
+            elif record.booking_type == 'physiotherapy':
+                record.start_datetime = (
+                    record.physiotherapy_start_datetime
+                )
+                record.end_datetime = (
+                    record.physiotherapy_end_datetime
+                )
+
     @api.onchange('booking_type')
     def _onchange_booking_type(self):
         if self.booking_type == 'class':
             self.swimming_slot_id = False
+            self.physiotherapy_start_datetime = False
+            self.physiotherapy_end_datetime = False
 
         elif self.booking_type == 'swimming':
             self.class_id = False
             self.class_schedule_id = False
+            self.physiotherapy_start_datetime = False
+            self.physiotherapy_end_datetime = False
+
+        elif self.booking_type == 'physiotherapy':
+            self.class_id = False
+            self.class_schedule_id = False
+            self.swimming_slot_id = False
 
     @api.constrains(
         'booking_type',
@@ -169,6 +197,25 @@ class FitZoneBooking(models.Model):
                 if facility.state != 'available':
                     raise ValidationError(
                         'This swimming pool is not available for booking.'
+                    )
+
+            elif record.booking_type == 'physiotherapy':
+                if not record.physiotherapy_start_datetime:
+                    raise ValidationError(
+                        'Physiotherapy bookings must have a start date and time.'
+                    )
+
+                if not record.physiotherapy_end_datetime:
+                    raise ValidationError(
+                        'Physiotherapy bookings must have an end date and time.'
+                    )
+
+                if (
+                    record.physiotherapy_end_datetime
+                    <= record.physiotherapy_start_datetime
+                ):
+                    raise ValidationError(
+                        'The physiotherapy end date and time must be after the start date and time.'
                     )
 
     @api.constrains(

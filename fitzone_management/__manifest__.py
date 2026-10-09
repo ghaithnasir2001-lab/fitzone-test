@@ -12,6 +12,7 @@
         'hr',
     ],
     'data': [
+        'security/fitzone_groups.xml',
         'security/ir.model.access.csv',
 
         'data/health_sequence.xml',
