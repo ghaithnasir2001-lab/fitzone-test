@@ -12,6 +12,7 @@
         'hr',
     ],
     'data': [
+        'security/fitzone_security.xml',
         'security/ir.model.access.csv',
 
         'data/health_sequence.xml',
@@ -33,6 +34,8 @@
         'views/trainer_views.xml',
 
         'data/booking_sequence.xml',
+        'data/nutrition_sequence.xml',
+        'views/nutrition_views.xml',
     ],
     'installable': True,
     'application': True,
