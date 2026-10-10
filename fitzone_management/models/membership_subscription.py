@@ -1,13 +1,20 @@
+import base64
+
 from dateutil.relativedelta import relativedelta
 
 from odoo import api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 
 
 class FitZoneMembershipSubscription(models.Model):
     _name = 'fitzone.membership.subscription'
     _description = 'FitZone Membership Subscription'
     _order = 'subscription_date desc, id desc'
+
+    _barcode_unique = models.Constraint(
+        'UNIQUE(barcode)',
+        'Membership barcode must be unique.',
+    )
 
     name = fields.Char(
         string='Membership Number',
@@ -16,10 +23,16 @@ class FitZoneMembershipSubscription(models.Model):
         default='New',
     )
 
+    barcode = fields.Char(
+        string='Barcode',
+        copy=False,
+        readonly=True,
+        index=True,
+    )
+
     subscriber_id = fields.Many2one(
         'res.partner',
         string='Subscriber',
-        required=True,
         ondelete='restrict',
     )
 
@@ -94,6 +107,74 @@ class FitZoneMembershipSubscription(models.Model):
         compute='_compute_final_price',
         store=True,
     )
+
+    payment_plan = fields.Selection(
+        [
+            ('full', 'Full Payment'),
+            ('installments', 'Two Installments'),
+        ],
+        string='Payment Plan',
+        required=True,
+        default='full',
+    )
+
+    first_installment_amount = fields.Monetary(
+        string='First Installment Amount',
+        currency_field='currency_id',
+    )
+
+    second_installment_due_date = fields.Date(
+        string='Second Installment Due Date',
+    )
+
+    second_installment_amount = fields.Monetary(
+        string='Second Installment Amount',
+        currency_field='currency_id',
+        compute='_compute_second_installment_amount',
+    )
+
+    installment_ids = fields.One2many(
+        'fitzone.membership.installment',
+        'subscription_id',
+        string='Installments',
+        copy=False,
+    )
+
+    invoice_id = fields.Many2one(
+        'account.move',
+        string='Full Membership Invoice',
+        readonly=True,
+        copy=False,
+        ondelete='restrict',
+    )
+
+    payment_access_blocked = fields.Boolean(
+        string='Access Blocked Due to Overdue Payment',
+        compute='_compute_payment_access_blocked',
+    )
+
+    @api.depends('final_price', 'first_installment_amount')
+    def _compute_second_installment_amount(self):
+        for record in self:
+            record.second_installment_amount = max(
+                record.final_price - record.first_installment_amount,
+                0.0,
+            )
+
+    @api.depends(
+        'payment_plan',
+        'installment_ids.payment_status',
+        'installment_ids.installment_number',
+        'installment_ids.due_date',
+        'installment_ids.invoice_id.amount_residual',
+    )
+    def _compute_payment_access_blocked(self):
+        for record in self:
+            record.payment_access_blocked = any(
+                line.installment_number == '2'
+                and line.payment_status == 'overdue'
+                for line in record.installment_ids
+            )
 
     allowed_freeze_days = fields.Integer(
         string='Allowed Freeze Days',
@@ -196,19 +277,28 @@ class FitZoneMembershipSubscription(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+
         for vals in vals_list:
+            if not vals.get('subscriber_id'):
+                raise ValidationError("Please select a subscriber before creating a membership subscription.")
             if vals.get('name', 'New') == 'New':
-                vals['name'] = self.env[
-                    'ir.sequence'
-                ].next_by_code(
+                vals['name'] = self.env['ir.sequence'].next_by_code(
                     'fitzone.membership.subscription'
                 ) or 'New'
 
+            if not vals.get('barcode'):
+                vals['barcode'] = self.env['ir.sequence'].next_by_code(
+                    'fitzone.membership.barcode'
+                ) or False
+
             package = self.env[
                 'fitzone.membership.package'
-            ].browse(vals.get('package_id'))
+            ].browse(
+                vals.get('package_id')
+            )
 
             if package.exists():
+
                 if not vals.get('price'):
                     vals['price'] = package.price
 
@@ -223,6 +313,7 @@ class FitZoneMembershipSubscription(models.Model):
                 subscription_date = fields.Date.to_date(
                     subscription_date
                 )
+
                 activation_date = fields.Date.to_date(
                     activation_date
                 )
@@ -256,6 +347,7 @@ class FitZoneMembershipSubscription(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
+
         result = super().write(vals)
 
         if (
@@ -265,6 +357,7 @@ class FitZoneMembershipSubscription(models.Model):
             today = fields.Date.context_today(self)
 
             for record in self:
+
                 if record.status in (
                     'cancelled',
                     'renewed',
@@ -287,7 +380,201 @@ class FitZoneMembershipSubscription(models.Model):
                 else:
                     record.status = 'active'
 
+        if 'second_installment_due_date' in vals:
+            for subscription in self:
+                due_date = subscription.second_installment_due_date
+
+                if not due_date:
+                    continue
+
+                second_installment = self.env[
+                    'fitzone.membership.installment'
+                ].search([
+                    ('subscription_id', '=', subscription.id),
+                    ('installment_number', '=', '2'),
+                ], limit=1)
+
+                if (
+                    second_installment
+                    and second_installment.due_date != due_date
+                ):
+                    second_installment.write({
+                        'due_date': due_date,
+                    })
+
         return result
+
+    def action_create_payment_plan(self):
+        for subscription in self:
+            if subscription.payment_plan != 'installments':
+                raise UserError(
+                    'Select the two-installment payment plan first.'
+                )
+
+            if subscription.installment_ids:
+                raise UserError(
+                    'A payment plan already exists for this membership.'
+                )
+
+            if subscription.invoice_id:
+                raise UserError(
+                    'A full membership invoice already exists.'
+                )
+
+            duration = subscription.package_id.duration_months
+
+            if duration < 3:
+                raise ValidationError(
+                    'Installments are allowed only for memberships '
+                    'of three months or longer.'
+                )
+
+            package = subscription.package_id
+
+            monthly_domain = [
+                ('duration_months', '=', 1),
+                ('currency_id', '=', package.currency_id.id),
+                ('active', '=', True),
+            ]
+
+            if package.is_all_inclusive or package.package_type == 'all_inclusive':
+                monthly_domain += [
+                    '|',
+                    ('is_all_inclusive', '=', True),
+                    ('package_type', '=', 'all_inclusive'),
+                ]
+            elif package.package_type == 'private':
+                monthly_domain += [
+                    ('package_type', '=', 'private'),
+                    ('is_all_inclusive', '=', False),
+                ]
+            else:
+                monthly_domain += [
+                    ('package_type', '=', 'general'),
+                    ('is_all_inclusive', '=', False),
+                ]
+
+            monthly_package = self.env[
+                'fitzone.membership.package'
+            ].search(
+                monthly_domain,
+                limit=1,
+            )
+
+            if not monthly_package:
+                raise UserError(
+                    'Create an active one-month package of the same type '
+                    'before creating the installment plan.'
+                )
+
+            minimum_first_amount = monthly_package.price
+
+            first_amount = subscription.first_installment_amount
+            second_amount = (
+                subscription.final_price - first_amount
+            )
+
+            if first_amount < minimum_first_amount:
+                raise ValidationError(
+                    'The first installment must be at least the price '
+                    'of a one-month package of the same type: '
+                    f'{minimum_first_amount:.2f}.'
+                )
+
+            if first_amount <= 0 or second_amount <= 0:
+                raise ValidationError(
+                    'Both installments must have a positive amount.'
+                )
+
+            if not subscription.second_installment_due_date:
+                raise ValidationError(
+                    'Set the second installment due date first.'
+                )
+
+            if (
+                subscription.second_installment_due_date
+                < subscription.subscription_date
+            ):
+                raise ValidationError(
+                    'The second installment due date cannot be before '
+                    'the subscription date.'
+                )
+
+            self.env['fitzone.membership.installment'].create([
+                {
+                    'subscription_id': subscription.id,
+                    'installment_number': '1',
+                    'amount': first_amount,
+                    'due_date': subscription.subscription_date,
+                },
+                {
+                    'subscription_id': subscription.id,
+                    'installment_number': '2',
+                    'amount': second_amount,
+                    'due_date': subscription.second_installment_due_date,
+                },
+            ])
+
+        return True
+
+    def action_create_full_invoice(self):
+        for subscription in self:
+            if subscription.payment_plan != 'full':
+                raise UserError(
+                    'This membership uses installments. '
+                    'Create invoices from its installment records.'
+                )
+
+            if subscription.invoice_id:
+                raise UserError(
+                    'A full membership invoice already exists.'
+                )
+
+            company = self.env.company
+
+            income_account = self.env['account.account'].search([
+                ('company_ids', 'in', [company.id]),
+                ('account_type', 'in', ['income', 'income_other']),
+            ], limit=1)
+
+            if not income_account:
+                raise UserError(
+                    'Configure an income account in Odoo Accounting first.'
+                )
+
+            tax = self.env['account.tax'].search([
+                ('company_id', '=', company.id),
+                ('type_tax_use', '=', 'sale'),
+                ('amount', '=', 16.0),
+                ('active', '=', True),
+            ], limit=1)
+
+            if not tax:
+                raise UserError(
+                    'Configure the 16% sales tax in Odoo Accounting first'
+                )
+
+            invoice = self.env['account.move'].create({
+                'move_type': 'out_invoice',
+                'partner_id': subscription.subscriber_id.id,
+                'company_id': company.id,
+                'invoice_date': fields.Date.context_today(subscription),
+                'invoice_line_ids': [
+                    fields.Command.create({
+                        'name': (
+                            f'{subscription.name} - Membership'
+                        ),
+                        'quantity': 1.0,
+                        'price_unit': subscription.final_price / 1.16,
+                        'account_id': income_account.id,
+                        'tax_ids': [fields.Command.set([tax.id])],
+                    }),
+                ],
+            })
+
+            invoice.action_post()
+            subscription.invoice_id = invoice.id
+        return True
 
     @api.onchange(
         'subscription_date',
@@ -295,7 +582,9 @@ class FitZoneMembershipSubscription(models.Model):
         'package_id',
     )
     def _onchange_subscription_dates(self):
+
         for record in self:
+
             if record.subscription_date:
                 if not record.activation_date:
                     record.activation_date = record.subscription_date
@@ -304,9 +593,11 @@ class FitZoneMembershipSubscription(models.Model):
                     record.activation_date = record.subscription_date
 
             if record.package_id:
+
                 record.price = record.package_id.price
 
                 if record.activation_date:
+
                     record.expiration_date = (
                         record.activation_date
                         + relativedelta(
@@ -320,9 +611,12 @@ class FitZoneMembershipSubscription(models.Model):
         'used_freeze_days',
         'used_pt_sessions',
         'used_physio_sessions',
+        'used_nutrition_consultations',
     )
     def _onchange_non_negative_values(self):
+
         for record in self:
+
             if record.discount < 0:
                 record.discount = 0
 
@@ -337,7 +631,9 @@ class FitZoneMembershipSubscription(models.Model):
 
     @api.depends('price', 'discount')
     def _compute_final_price(self):
+
         for record in self:
+
             record.final_price = max(
                 record.price - record.discount,
                 0.0,
@@ -348,7 +644,9 @@ class FitZoneMembershipSubscription(models.Model):
         'used_freeze_days',
     )
     def _compute_remaining_freeze_days(self):
+
         for record in self:
+
             record.remaining_freeze_days = max(
                 record.allowed_freeze_days
                 - record.used_freeze_days,
@@ -360,7 +658,9 @@ class FitZoneMembershipSubscription(models.Model):
         'used_pt_sessions',
     )
     def _compute_remaining_pt_sessions(self):
+
         for record in self:
+
             record.remaining_pt_sessions = max(
                 record.included_pt_sessions
                 - record.used_pt_sessions,
@@ -372,12 +672,16 @@ class FitZoneMembershipSubscription(models.Model):
         'package_id.included_physio_sessions_per_month',
     )
     def _compute_included_physio_sessions(self):
+
         for record in self:
+
             if record.package_id:
+
                 record.included_physio_sessions = (
                     record.package_id.included_physio_sessions_per_month
                     * record.package_id.duration_months
                 )
+
             else:
                 record.included_physio_sessions = 0
 
@@ -386,13 +690,14 @@ class FitZoneMembershipSubscription(models.Model):
         'used_physio_sessions',
     )
     def _compute_remaining_physio_sessions(self):
+
         for record in self:
+
             record.remaining_physio_sessions = max(
                 record.included_physio_sessions
                 - record.used_physio_sessions,
                 0,
             )
-
     @api.depends(
         'nutrition_consultation_ids',
         'nutrition_consultation_ids.uses_included_consultation',
@@ -405,12 +710,15 @@ class FitZoneMembershipSubscription(models.Model):
                 if consultation.uses_included_consultation
             )
 
+
     @api.depends(
         'included_nutrition_consultations',
         'used_nutrition_consultations',
     )
     def _compute_remaining_nutrition_consultations(self):
+
         for record in self:
+
             record.remaining_nutrition_consultations = max(
                 record.included_nutrition_consultations
                 - record.used_nutrition_consultations,
@@ -423,7 +731,9 @@ class FitZoneMembershipSubscription(models.Model):
         'expiration_date',
     )
     def _check_membership_dates(self):
+
         for record in self:
+
             if (
                 record.subscription_date
                 and record.activation_date
@@ -447,9 +757,12 @@ class FitZoneMembershipSubscription(models.Model):
         'used_freeze_days',
         'used_pt_sessions',
         'used_physio_sessions',
+        'used_nutrition_consultations',
     )
     def _check_non_negative_values(self):
+
         for record in self:
+
             if record.discount < 0:
                 raise ValidationError(
                     'Discount cannot be negative.'
@@ -470,12 +783,19 @@ class FitZoneMembershipSubscription(models.Model):
                     'Used physiotherapy sessions cannot be negative.'
                 )
 
+            if record.used_nutrition_consultations < 0:
+                raise ValidationError(
+                    'Used nutrition consultations cannot be negative.'
+                )
+
     @api.constrains(
         'used_freeze_days',
         'allowed_freeze_days',
     )
     def _check_used_freeze_days(self):
+
         for record in self:
+
             if record.used_freeze_days > record.allowed_freeze_days:
                 raise ValidationError(
                     'Used freeze days cannot exceed the allowed freeze days.'
@@ -486,7 +806,9 @@ class FitZoneMembershipSubscription(models.Model):
         'included_pt_sessions',
     )
     def _check_used_pt_sessions(self):
+
         for record in self:
+
             if record.used_pt_sessions > record.included_pt_sessions:
                 raise ValidationError(
                     'Used PT sessions cannot exceed included PT sessions.'
@@ -497,7 +819,9 @@ class FitZoneMembershipSubscription(models.Model):
         'included_physio_sessions',
     )
     def _check_used_physio_sessions(self):
+
         for record in self:
+
             if (
                 record.used_physio_sessions
                 > record.included_physio_sessions
@@ -512,7 +836,9 @@ class FitZoneMembershipSubscription(models.Model):
         'included_nutrition_consultations',
     )
     def _check_used_nutrition_consultations(self):
+
         for record in self:
+
             if (
                 record.used_nutrition_consultations
                 > record.included_nutrition_consultations
@@ -522,8 +848,185 @@ class FitZoneMembershipSubscription(models.Model):
                     'included nutrition consultations.'
                 )
 
+    def _process_attachments_for_template_post(self, mail_template):
+
+        barcode_template = self.env.ref(
+            'fitzone_management.email_template_fitzone_membership_barcode'
+        )
+
+        if mail_template.id != barcode_template.id:
+            return {}
+
+        report = self.env['ir.actions.report']
+        result = {}
+
+        for membership in self:
+
+            if not membership.barcode:
+                continue
+
+            barcode_image = report.barcode(
+                'Code128',
+                membership.barcode,
+                width=600,
+                height=120,
+            )
+
+            result[membership.id] = {
+                'attachments': [
+                    (
+                        f'__fitzone_inline_barcode__{membership.id}.png',
+                        base64.b64encode(barcode_image),
+                    )
+                ]
+            }
+
+        return result
+
+    def action_send_barcode_email(self):
+
+        template = self.env.ref(
+            'fitzone_management.email_template_fitzone_membership_barcode'
+        )
+
+        for membership in self:
+
+            if not membership.subscriber_id.email:
+                raise ValidationError(
+                    'The subscriber does not have an email address.'
+                )
+
+            template.send_mail(
+                membership.id,
+                force_send=True,
+            )
+
+        return True
+
+    @api.model
+    def verify_barcode(self, barcode):
+
+        barcode = (barcode or '').strip()
+
+        if not barcode:
+            return {
+                'allowed': False,
+                'reason': 'Barcode is required.',
+                'membership': False,
+            }
+
+        membership = self.search(
+            [('barcode', '=', barcode)],
+            limit=1,
+        )
+
+        if not membership:
+            return {
+                'allowed': False,
+                'reason': 'No membership found for this barcode.',
+                'membership': False,
+            }
+
+        if membership.status == 'draft':
+            return {
+                'allowed': False,
+                'reason': 'Membership is not active yet.',
+                'membership': membership,
+            }
+
+        if membership.status == 'frozen':
+            return {
+                'allowed': False,
+                'reason': 'Membership is frozen.',
+                'membership': membership,
+            }
+
+        if membership.status == 'expired':
+            return {
+                'allowed': False,
+                'reason': 'Membership has expired.',
+                'membership': membership,
+            }
+
+        if membership.status == 'cancelled':
+            return {
+                'allowed': False,
+                'reason': 'Membership has been cancelled.',
+                'membership': membership,
+            }
+
+        if membership.status == 'renewed':
+            return {
+                'allowed': False,
+                'reason': 'Membership has been renewed.',
+                'membership': membership,
+            }
+
+        if membership.status != 'active':
+            return {
+                'allowed': False,
+                'reason': 'Membership is not active.',
+                'membership': membership,
+            }
+
+        today = fields.Date.context_today(self)
+
+        if membership.expiration_date and membership.expiration_date < today:
+            membership.status = 'expired'
+            return {
+                'allowed': False,
+                'reason': 'Membership has expired.',
+                'membership': membership,
+            }
+
+        active_freeze = self.env[
+            'fitzone.membership.freeze'
+        ].search(
+            [
+                ('subscription_id', '=', membership.id),
+                ('status', '=', 'active'),
+                ('start_date', '<=', today),
+                ('end_date', '>=', today),
+            ],
+            limit=1,
+        )
+
+        if active_freeze:
+            return {
+                'allowed': False,
+                'reason': 'Membership is frozen.',
+                'membership': membership,
+            }
+
+        overdue_second_installment = membership.installment_ids.filtered(
+            lambda installment: (
+                installment.installment_number == '2'
+                and installment.due_date
+                and installment.due_date < today
+                and (
+                    not installment.invoice_id
+                    or installment.invoice_id.state != 'posted'
+                    or installment.invoice_id.amount_residual > 0.01
+                )
+            )
+        )
+
+        if overdue_second_installment:
+            return {
+                'allowed': False,
+                'reason': 'Second installment is overdue. Check-in is not allowed.',
+                'membership': membership,
+            }
+
+        return {
+            'allowed': True,
+            'reason': 'Membership is active.',
+            'membership': membership,
+        }
+
     @api.model
     def _cron_update_membership_statuses(self):
+
         today = fields.Date.context_today(self)
 
         draft_memberships = self.search(
@@ -547,7 +1050,9 @@ class FitZoneMembershipSubscription(models.Model):
             membership.status = 'expired'
 
     def action_resume_after_freeze(self):
+
         for subscription in self:
+
             if subscription.status != 'frozen':
                 raise ValidationError(
                     'Only frozen memberships can be resumed.'
