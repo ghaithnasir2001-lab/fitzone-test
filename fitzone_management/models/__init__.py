@@ -17,3 +17,7 @@ from . import injury
 from . import rehab_file
 from . import treatment
 from . import injury_subscriber
+from . import checkin
+from . import mail_server
+from . import membership_payment
+from . import nutrition
