@@ -14,6 +14,7 @@
         'account',
     ],
     'data': [
+        'security/fitzone_groups.xml',
         'security/fitzone_security.xml',
         'security/ir.model.access.csv',
 
@@ -21,6 +22,7 @@
         'data/membership_sequence.xml',
         'data/checkin_sequence.xml',
         'data/membership_cron.xml',
+        'data/injury_rehab_sequence.xml',
         'data/membership_email_template.xml',
         'data/payment_sequence.xml',
 
@@ -38,6 +40,7 @@
         'views/booking_views.xml',
         'views/subscriber_views.xml',
         'views/health_views.xml',
+        'views/injury_rehab_views.xml',
         'views/trainer_views.xml',
 
         'data/booking_sequence.xml',

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="group_fitzone_trainer" model="res.groups">
+        <field name="name">FitZone Trainer</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="group_fitzone_physiotherapist" model="res.groups">
+        <field name="name">FitZone Physiotherapist</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="group_fitzone_management" model="res.groups">
+        <field name="name">FitZone Management</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+</odoo>
