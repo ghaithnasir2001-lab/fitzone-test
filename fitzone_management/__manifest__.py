@@ -9,6 +9,10 @@
     'depends': [
         'base',
         'product',
+        'stock',
+        'product_expiry',
+        'purchase',
+        'point_of_sale',
         'hr',
         'mail',
         'account',
@@ -50,6 +54,9 @@
     'assets': {
         'web.assets_backend': [
             'fitzone_management/static/src/js/checkin_barcode_scanner.js',
+        ],
+        'point_of_sale._assets_pos': [
+            'fitzone_management/static/src/js/pos_member_pricelist.js',
         ],
     },
     'installable': True,
