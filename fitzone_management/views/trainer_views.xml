@@ -176,14 +176,26 @@
                     />
 
                     <button
+                        name="action_mark_attended"
+                        string="Mark Attended"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state != 'confirmed'"
+                    />
+
+                    <button
                         name="action_cancel"
                         string="Cancel"
                         type="object"
                         class="btn-secondary"
-                        invisible="state == 'cancelled'"
+                        invisible="state in ('cancelled', 'attended')"
                     />
 
-                    <field name="state" widget="statusbar"/>
+                    <field
+                        name="state"
+                        widget="statusbar"
+                        statusbar_visible="draft,confirmed,attended,cancelled"
+                    />
 
                 </header>
 

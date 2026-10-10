@@ -53,6 +53,7 @@ class FitZoneTrainerBooking(models.Model):
         [
             ("draft", "Draft"),
             ("confirmed", "Confirmed"),
+            ("attended", "Attended"),
             ("cancelled", "Cancelled"),
         ],
         string="Status",
@@ -72,7 +73,7 @@ class FitZoneTrainerBooking(models.Model):
     )
     def _check_trainer_booking(self):
         for booking in self:
-            if booking.state == "cancelled":
+            if booking.state in ("cancelled", "attended"):
                 continue
 
             if not booking.start_datetime or not booking.end_datetime:
@@ -88,7 +89,8 @@ class FitZoneTrainerBooking(models.Model):
                     "This trainer is not available for booking."
                 )
 
-            booking._check_membership()
+            if booking.state in ("draft", "confirmed"):
+                booking._check_membership()
             booking._check_booking_conflict()
             booking._check_subscriber_conflict()
             booking._check_trainer_availability()
@@ -110,6 +112,26 @@ class FitZoneTrainerBooking(models.Model):
             if membership.status != "active":
                 raise ValidationError(
                     "The membership must be active."
+                )
+
+            booking_date = fields.Datetime.to_datetime(
+                booking.start_datetime
+            ).date()
+
+            if (
+                membership.activation_date
+                and booking_date < membership.activation_date
+            ):
+                raise ValidationError(
+                    "The booking date is before the membership activation date."
+                )
+
+            if (
+                membership.expiration_date
+                and booking_date > membership.expiration_date
+            ):
+                raise ValidationError(
+                    "The booking date is after the membership expiration date."
                 )
 
             if membership.remaining_pt_sessions <= 0:
@@ -234,7 +256,6 @@ class FitZoneTrainerBooking(models.Model):
 
     def action_confirm(self):
         for booking in self:
-
             if booking.state != "draft":
                 continue
 
@@ -242,19 +263,43 @@ class FitZoneTrainerBooking(models.Model):
             booking._check_booking_conflict()
             booking._check_subscriber_conflict()
             booking._check_trainer_availability()
-
-            booking.membership_id.used_pt_sessions += 1
             booking.state = "confirmed"
+
+        return True
+
+    def action_mark_attended(self):
+        for booking in self:
+            if booking.state != "confirmed":
+                raise ValidationError(
+                    "Only confirmed bookings can be marked as attended."
+                )
+
+            # Attendance can only be recorded after the booked session ends.
+            if fields.Datetime.to_datetime(
+                booking.end_datetime
+            ) > fields.Datetime.now():
+                raise ValidationError(
+                    "A booking cannot be marked attended before its end time."
+                )
+
+            # Validate the membership and remaining balance at attendance.
+            booking._check_membership()
+            booking.membership_id.used_pt_sessions += 1
+            booking.state = "attended"
 
         return True
 
     def action_cancel(self):
         for booking in self:
+            if booking.state == "attended":
+                raise ValidationError(
+                    "An attended booking cannot be cancelled."
+                )
 
-            if booking.state == "confirmed":
-                if booking.membership_id.used_pt_sessions > 0:
-                    booking.membership_id.used_pt_sessions -= 1
+            if booking.state == "cancelled":
+                continue
 
+            # Cancellation does not consume or refund a session.
             booking.state = "cancelled"
 
         return True
