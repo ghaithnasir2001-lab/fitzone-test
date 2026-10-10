@@ -1,6 +1,13 @@
-
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
+
+
+def _get_nutrition_consultation_price(env):
+    value = env['ir.config_parameter'].sudo().get_param(
+        'fitzone_management.nutrition_consultation_price',
+        '0.0',
+    )
+    return float(value or 0.0)
 
 
 class FitZoneNutritionProgram(models.Model):
@@ -50,13 +57,8 @@ class FitZoneNutritionProgram(models.Model):
         default='active',
     )
 
-    goals = fields.Text(
-        string='Goals',
-    )
-
-    notes = fields.Text(
-        string='Notes',
-    )
+    goals = fields.Text(string='Goals')
+    notes = fields.Text(string='Notes')
 
     consultation_ids = fields.One2many(
         'fitzone.nutrition.consultation',
@@ -72,7 +74,8 @@ class FitZoneNutritionProgram(models.Model):
                 and not record.subscriber_id.is_fitzone_subscriber
             ):
                 raise ValidationError(
-                    'A nutrition program can only be created for a FitZone subscriber.'
+                    'A nutrition program can only be created '
+                    'for a FitZone subscriber.'
                 )
 
     @api.constrains('start_date', 'end_date')
@@ -151,21 +154,44 @@ class FitZoneNutritionConsultation(models.Model):
         default=fields.Date.context_today,
     )
 
-    notes = fields.Text(
-        string='Consultation Notes',
+    currency_id = fields.Many2one(
+        'res.currency',
+        string='Currency',
+        required=True,
+        default=lambda self: self.env.company.currency_id,
     )
 
-    recommendations = fields.Text(
-        string='Recommendations',
+    consultation_price = fields.Monetary(
+        string='Consultation Price',
+        currency_field='currency_id',
+        default=lambda self: _get_nutrition_consultation_price(self.env),
+        copy=False,
     )
+
+    invoice_id = fields.Many2one(
+        'account.move',
+        string='Consultation Invoice',
+        readonly=True,
+        copy=False,
+        ondelete='restrict',
+    )
+
+    invoice_payment_state = fields.Selection(
+        related='invoice_id.payment_state',
+        string='Payment Status',
+        readonly=True,
+    )
+
+    notes = fields.Text(string='Consultation Notes')
+    recommendations = fields.Text(string='Recommendations')
 
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
             program_id = vals.get('program_id')
             subscription_id = vals.get('subscription_id')
+            uses_included = vals.get('uses_included_consultation', False)
 
-            # Derive the subscriber from the selected program.
             if program_id and not vals.get('subscriber_id'):
                 program = self.env[
                     'fitzone.nutrition.program'
@@ -174,7 +200,6 @@ class FitZoneNutritionConsultation(models.Model):
                 if program:
                     vals['subscriber_id'] = program.subscriber_id.id
 
-            # If a subscription is selected, derive its subscriber too.
             if subscription_id and not vals.get('subscriber_id'):
                 subscription = self.env[
                     'fitzone.membership.subscription'
@@ -183,7 +208,50 @@ class FitZoneNutritionConsultation(models.Model):
                 if subscription:
                     vals['subscriber_id'] = subscription.subscriber_id.id
 
+            # Included consultations are free.
+            if uses_included:
+                vals['consultation_price'] = 0.0
+            elif 'consultation_price' not in vals:
+                vals['consultation_price'] = (
+                    _get_nutrition_consultation_price(self.env)
+                )
+
         return super().create(vals_list)
+
+    def write(self, vals):
+        vals = vals.copy()
+
+        # Keep the price consistent when changing between included
+        # and paid consultations, provided no invoice exists yet.
+        if 'uses_included_consultation' in vals:
+            for record in self:
+                if record.invoice_id:
+                    raise ValidationError(
+                        'You cannot change the consultation benefit '
+                        'after an invoice has been created.'
+                    )
+
+            if vals['uses_included_consultation']:
+                vals['consultation_price'] = 0.0
+            elif 'consultation_price' not in vals:
+                vals['consultation_price'] = (
+                    _get_nutrition_consultation_price(self.env)
+                )
+
+        if 'consultation_price' in vals:
+            for record in self:
+                if record.invoice_id:
+                    raise ValidationError(
+                        'You cannot change the price after an invoice '
+                        'has been created.'
+                    )
+
+            if vals['consultation_price'] < 0:
+                raise ValidationError(
+                    'Consultation price cannot be negative.'
+                )
+
+        return super().write(vals)
 
     @api.constrains('subscriber_id')
     def _check_subscriber(self):
@@ -193,7 +261,8 @@ class FitZoneNutritionConsultation(models.Model):
                 and not record.subscriber_id.is_fitzone_subscriber
             ):
                 raise ValidationError(
-                    'A nutrition consultation can only be created for a FitZone subscriber.'
+                    'A nutrition consultation can only be created '
+                    'for a FitZone subscriber.'
                 )
 
     @api.constrains('program_id', 'subscriber_id')
@@ -202,10 +271,12 @@ class FitZoneNutritionConsultation(models.Model):
             if (
                 record.program_id
                 and record.subscriber_id
-                and record.program_id.subscriber_id != record.subscriber_id
+                and record.program_id.subscriber_id
+                != record.subscriber_id
             ):
                 raise ValidationError(
-                    'The consultation subscriber must match the nutrition program subscriber.'
+                    'The consultation subscriber must match '
+                    'the nutrition program subscriber.'
                 )
 
     @api.constrains('subscription_id', 'subscriber_id')
@@ -218,7 +289,8 @@ class FitZoneNutritionConsultation(models.Model):
                 != record.subscriber_id
             ):
                 raise ValidationError(
-                    'The membership subscriber must match the consultation subscriber.'
+                    'The membership subscriber must match '
+                    'the consultation subscriber.'
                 )
 
     @api.constrains(
@@ -236,7 +308,8 @@ class FitZoneNutritionConsultation(models.Model):
 
             if not subscription:
                 raise ValidationError(
-                    'Select a membership subscription to use the included consultation.'
+                    'Select a membership subscription to use '
+                    'the included consultation.'
                 )
 
             if subscription.subscriber_id != record.subscriber_id:
@@ -244,7 +317,6 @@ class FitZoneNutritionConsultation(models.Model):
                     'The selected membership belongs to another subscriber.'
                 )
 
-            # Support both ways of identifying an All-Inclusive package.
             package = subscription.package_id
 
             if not (
@@ -258,7 +330,8 @@ class FitZoneNutritionConsultation(models.Model):
 
             if subscription.status != 'active':
                 raise ValidationError(
-                    'The membership must be active to use the included consultation.'
+                    'The membership must be active to use '
+                    'the included consultation.'
                 )
 
             if (
@@ -266,7 +339,8 @@ class FitZoneNutritionConsultation(models.Model):
                 and record.consultation_date < subscription.activation_date
             ):
                 raise ValidationError(
-                    'The consultation date cannot be before the membership activation date.'
+                    'The consultation date cannot be before '
+                    'the membership activation date.'
                 )
 
             if (
@@ -274,11 +348,10 @@ class FitZoneNutritionConsultation(models.Model):
                 and record.consultation_date > subscription.expiration_date
             ):
                 raise ValidationError(
-                    'The consultation date must be within the membership period.'
+                    'The consultation date must be within '
+                    'the membership period.'
                 )
 
-            # Exclude this record so edits to an existing consultation
-            # do not count it twice.
             already_used = self.search_count([
                 ('subscription_id', '=', subscription.id),
                 ('uses_included_consultation', '=', True),
@@ -290,8 +363,82 @@ class FitZoneNutritionConsultation(models.Model):
                 >= subscription.included_nutrition_consultations
             ):
                 raise ValidationError(
-                    'No included nutrition consultations remain for this membership.'
+                    'No included nutrition consultations remain '
+                    'for this membership.'
                 )
+
+    def action_create_invoice(self):
+        self.ensure_one()
+
+        if self.uses_included_consultation:
+            raise ValidationError(
+                'Included consultations do not require an invoice.'
+            )
+
+        if self.invoice_id:
+            raise ValidationError(
+                'An invoice already exists for this consultation.'
+            )
+
+        if self.consultation_price <= 0:
+            raise ValidationError(
+                'Configure a consultation price greater than zero first.'
+            )
+
+        company = self.env.company
+
+        income_account = self.env['account.account'].search([
+            ('account_type', 'in', ['income', 'income_other']),
+            ('company_ids', 'in', [company.id]),
+        ], limit=1)
+
+        if not income_account:
+            raise ValidationError(
+                'No income account is configured for this company.'
+            )
+
+        tax = self.env['account.tax'].search([
+            ('type_tax_use', '=', 'sale'),
+            ('amount', '=', 16),
+            ('active', '=', True),
+            ('company_id', '=', company.id),
+        ], limit=1)
+
+        if not tax:
+            raise ValidationError(
+                'The active 16% sales tax was not found for this company.'
+            )
+
+        invoice = self.env['account.move'].create({
+            'move_type': 'out_invoice',
+            'partner_id': self.subscriber_id.id,
+            'company_id': company.id,
+            'invoice_date': fields.Date.context_today(self),
+            'invoice_line_ids': [
+                fields.Command.create({
+                    'name': f'{self.name} - Nutrition Consultation',
+                    'quantity': 1.0,
+                    # Consultation price is inclusive of 16% tax.
+                    'price_unit': self.consultation_price / 1.16,
+                    'account_id': income_account.id,
+                    'tax_ids': [
+                        fields.Command.set([tax.id])
+                    ],
+                }),
+            ],
+        })
+
+        invoice.action_post()
+        self.invoice_id = invoice.id
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Consultation Invoice',
+            'res_model': 'account.move',
+            'res_id': invoice.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
 
 
 class ResPartner(models.Model):
@@ -307,4 +454,16 @@ class ResPartner(models.Model):
         'fitzone.nutrition.consultation',
         'subscriber_id',
         string='Nutrition Consultations',
+    )
+
+
+class ResConfigSettings(models.TransientModel):
+    _inherit = 'res.config.settings'
+
+    nutrition_consultation_price = fields.Float(
+        string='Nutrition Consultation Price (JOD)',
+        config_parameter=(
+            'fitzone_management.nutrition_consultation_price'
+        ),
+        default=0.0,
     )

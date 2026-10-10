@@ -49,6 +49,9 @@
                                     <field name="nutritionist_id"/>
                                     <field name="subscription_id"/>
                                     <field name="uses_included_consultation"/>
+                                    <field name="consultation_price"/>
+                                    <field name="invoice_id"/>
+                                    <field name="invoice_payment_state"/>
                                 </list>
                             </field>
                         </page>
@@ -69,8 +72,11 @@
                 <field name="program_id"/>
                 <field name="subscription_id"/>
                 <field name="uses_included_consultation"/>
+                <field name="consultation_price"/>
                 <field name="nutritionist_id"/>
                 <field name="consultation_date"/>
+                <field name="invoice_id"/>
+                <field name="invoice_payment_state"/>
             </list>
         </field>
     </record>
@@ -81,6 +87,15 @@
         <field name="model">fitzone.nutrition.consultation</field>
         <field name="arch" type="xml">
             <form>
+                <header>
+                    <button
+                        name="action_create_invoice"
+                        type="object"
+                        string="Create Invoice"
+                        class="btn-primary"
+                        invisible="uses_included_consultation or invoice_id"
+                    />
+                </header>
                 <sheet>
                     <group>
                         <group>
@@ -103,6 +118,13 @@
                                domain="[('subscriber_id', '=', subscriber_id)]"/>
                     </group>
 
+                    <group string="Pricing and Invoice">
+                        <field name="currency_id" invisible="1"/>
+                        <field name="consultation_price" readonly="1"/>
+                        <field name="invoice_id" readonly="1"/>
+                        <field name="invoice_payment_state" readonly="1"/>
+                    </group>
+
                     <notebook>
                         <page string="Consultation Notes">
                             <field name="notes"/>
@@ -111,6 +133,29 @@
                     </notebook>
                 </sheet>
             </form>
+        </field>
+    </record>
+
+    <!-- Nutrition Consultation Price Setting -->
+    <record id="res_config_settings_view_form_nutrition"
+            model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.nutrition</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app name="fitzone_nutrition_settings"
+                     string="FitZone Nutrition">
+                    <block title="Nutrition Consultations">
+                        <setting
+                            id="fitzone_nutrition_consultation_price"
+                            string="Nutrition Consultation Price"
+                            help="Default price charged for a paid nutrition consultation.">
+                            <field name="nutrition_consultation_price"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
         </field>
     </record>
 
@@ -127,13 +172,24 @@
         <field name="view_mode">list,form</field>
     </record>
 
+
+    <!-- Nutrition Configuration Action -->
+    <record id="action_fitzone_nutrition_configuration"
+            model="ir.actions.act_window">
+        <field name="name">Nutrition Configuration</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'fitzone_management'}</field>
+    </record>
+
     <!-- Menus -->
     <menuitem
         id="menu_fitzone_nutrition_root"
         name="Nutrition"
-        parent="fitzone_management.menu_fitzone_root"
+        parent="fitzone_management.menu_fitzone_health_root"
         sequence="30"
-        groups="fitzone_management.group_fitzone_nutritionist,fitzone_management.group_fitzone_management"
+        groups="base.group_user"
     />
 
     <menuitem
@@ -182,8 +238,11 @@
                                 <field name="program_id"/>
                                 <field name="subscription_id"/>
                                 <field name="uses_included_consultation"/>
+                                <field name="consultation_price"/>
                                 <field name="nutritionist_id"/>
                                 <field name="consultation_date"/>
+                                <field name="invoice_id"/>
+                                <field name="invoice_payment_state"/>
                             </list>
                         </field>
                     </group>
@@ -191,5 +250,14 @@
             </notebook>
         </field>
     </record>
+
+
+    <menuitem
+        id="menu_fitzone_nutrition_configuration"
+        name="Nutrition Configuration"
+        parent="menu_fitzone_nutrition_root"
+        action="action_fitzone_nutrition_configuration"
+        sequence="30"
+    />
 
 </odoo>
