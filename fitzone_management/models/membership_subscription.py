@@ -824,13 +824,17 @@ class FitZoneMembershipSubscription(models.Model):
     @api.depends(
         'nutrition_consultation_ids',
         'nutrition_consultation_ids.uses_included_consultation',
+        'nutrition_consultation_ids.state',
     )
     def _compute_used_nutrition_consultations(self):
         for record in self:
             record.used_nutrition_consultations = sum(
                 1
                 for consultation in record.nutrition_consultation_ids
-                if consultation.uses_included_consultation
+                if (
+                    consultation.uses_included_consultation
+                    and consultation.state == 'completed'
+                )
             )
 
 

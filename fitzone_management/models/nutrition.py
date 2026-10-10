@@ -154,6 +154,18 @@ class FitZoneNutritionConsultation(models.Model):
         default=fields.Date.context_today,
     )
 
+    state = fields.Selection(
+        [
+            ('scheduled', 'Scheduled'),
+            ('completed', 'Completed'),
+            ('cancelled', 'Cancelled'),
+        ],
+        string='Status',
+        required=True,
+        default='scheduled',
+        copy=False,
+    )
+
     currency_id = fields.Many2one(
         'res.currency',
         string='Currency',
@@ -220,6 +232,16 @@ class FitZoneNutritionConsultation(models.Model):
 
     def write(self, vals):
         vals = vals.copy()
+
+        if (
+            'state' in vals
+            and not self.env.context.get(
+                '_allow_nutrition_state_transition'
+            )
+        ):
+            raise ValidationError(
+                'Change consultation status using the available actions.'
+            )
 
         # Keep the price consistent when changing between included
         # and paid consultations, provided no invoice exists yet.
@@ -355,6 +377,7 @@ class FitZoneNutritionConsultation(models.Model):
             already_used = self.search_count([
                 ('subscription_id', '=', subscription.id),
                 ('uses_included_consultation', '=', True),
+                ('state', 'in', ['scheduled', 'completed']),
                 ('id', '!=', record.id),
             ])
 
@@ -366,6 +389,33 @@ class FitZoneNutritionConsultation(models.Model):
                     'No included nutrition consultations remain '
                     'for this membership.'
                 )
+
+    def action_mark_completed(self):
+        for record in self:
+            if record.state == 'cancelled':
+                raise ValidationError(
+                    'A cancelled consultation cannot be completed.'
+                )
+            if record.state == 'completed':
+                continue
+            if record.uses_included_consultation:
+                record._check_included_consultation()
+            record.with_context(
+                _allow_nutrition_state_transition=True
+            ).write({'state': 'completed'})
+        return True
+
+    def action_cancel(self):
+        for record in self:
+            if record.state == 'completed':
+                raise ValidationError(
+                    'A completed consultation cannot be cancelled.'
+                )
+            if record.state != 'cancelled':
+                record.with_context(
+                    _allow_nutrition_state_transition=True
+                ).write({'state': 'cancelled'})
+        return True
 
     def action_create_invoice(self):
         self.ensure_one()

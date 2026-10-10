@@ -46,6 +46,7 @@
                                 <list>
                                     <field name="name"/>
                                     <field name="consultation_date"/>
+                                    <field name="state"/>
                                     <field name="nutritionist_id"/>
                                     <field name="subscription_id"/>
                                     <field name="uses_included_consultation"/>
@@ -72,6 +73,7 @@
                 <field name="program_id"/>
                 <field name="subscription_id"/>
                 <field name="uses_included_consultation"/>
+                <field name="state"/>
                 <field name="consultation_price"/>
                 <field name="nutritionist_id"/>
                 <field name="consultation_date"/>
@@ -88,6 +90,21 @@
         <field name="arch" type="xml">
             <form>
                 <header>
+                    <button
+                        name="action_mark_completed"
+                        type="object"
+                        string="Mark Completed"
+                        class="btn-primary"
+                        invisible="state != 'scheduled'"
+                    />
+                    <button
+                        name="action_cancel"
+                        type="object"
+                        string="Cancel"
+                        invisible="state != 'scheduled'"
+                    />
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="scheduled,completed,cancelled"/>
                     <button
                         name="action_create_invoice"
                         type="object"
@@ -238,6 +255,7 @@
                                 <field name="program_id"/>
                                 <field name="subscription_id"/>
                                 <field name="uses_included_consultation"/>
+                                <field name="state"/>
                                 <field name="consultation_price"/>
                                 <field name="nutritionist_id"/>
                                 <field name="consultation_date"/>
