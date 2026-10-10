@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="email_template_fitzone_membership_barcode"
+            model="mail.template">
+
+        <field name="name">FitZone Membership Barcode</field>
+
+        <field name="model_id"
+               ref="fitzone_management.model_fitzone_membership_subscription"/>
+
+        <field name="subject">Your FitZone Membership Barcode - {{ object.name }}</field>
+
+        <field name="email_to">{{ object.subscriber_id.email }}</field>
+
+        <field name="body_html" type="html">
+            <div style="font-family: Arial, sans-serif;">
+
+                <h2>Welcome to FitZone</h2>
+
+                <p>
+                    Dear
+                    <strong>
+                        <t t-out="object.subscriber_id.name"/>
+                    </strong>,
+                </p>
+
+                <p>
+                    Your FitZone membership has been created successfully.
+                </p>
+
+                <p>
+                    <strong>Membership Number:</strong>
+                    <t t-out="object.name"/>
+                </p>
+
+                <p>
+                    Please use the barcode below when checking in at FitZone:
+                </p>
+
+                <div style="text-align: center; margin: 20px 0;">
+
+                    <img
+                        t-att-src="'cid:fitzone_barcode_%s' % object.id"
+                        style="max-width: 100%;"
+                        alt="FitZone Membership Barcode"
+                    />
+
+                </div>
+
+                <p style="text-align: center;">
+                    <strong>
+                        <t t-out="object.barcode"/>
+                    </strong>
+                </p>
+
+                <p>
+                    Please show this barcode on your phone at reception.
+                </p>
+
+                <p>
+                    FitZone Team
+                </p>
+
+            </div>
+        </field>
+
+    </record>
+
+</odoo>

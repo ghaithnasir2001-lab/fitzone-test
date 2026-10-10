@@ -12,4 +12,6 @@ from . import trainer_schedule
 from . import membership_package
 from . import membership_subscription
 from . import membership_freeze
+from . import checkin
+from . import mail_server
 from . import membership_payment
