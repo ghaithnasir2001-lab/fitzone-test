@@ -15,3 +15,4 @@ from . import membership_freeze
 from . import checkin
 from . import mail_server
 from . import membership_payment
+from . import nutrition

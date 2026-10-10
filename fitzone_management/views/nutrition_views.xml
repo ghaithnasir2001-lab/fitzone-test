@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Nutrition Program List -->
+    <record id="view_fitzone_nutrition_program_list" model="ir.ui.view">
+        <field name="name">fitzone.nutrition.program.list</field>
+        <field name="model">fitzone.nutrition.program</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="subscriber_id"/>
+                <field name="nutritionist_id"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="status"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Nutrition Program Form -->
+    <record id="view_fitzone_nutrition_program_form" model="ir.ui.view">
+        <field name="name">fitzone.nutrition.program.form</field>
+        <field name="model">fitzone.nutrition.program</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="subscriber_id"/>
+                            <field name="nutritionist_id"/>
+                        </group>
+                        <group>
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                            <field name="status"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Goals and Notes">
+                            <field name="goals"/>
+                            <field name="notes"/>
+                        </page>
+                        <page string="Consultations">
+                            <field name="consultation_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="consultation_date"/>
+                                    <field name="nutritionist_id"/>
+                                    <field name="subscription_id"/>
+                                    <field name="uses_included_consultation"/>
+                                    <field name="consultation_price"/>
+                                    <field name="invoice_id"/>
+                                    <field name="invoice_payment_state"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Nutrition Consultation List -->
+    <record id="view_fitzone_nutrition_consultation_list" model="ir.ui.view">
+        <field name="name">fitzone.nutrition.consultation.list</field>
+        <field name="model">fitzone.nutrition.consultation</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="subscriber_id"/>
+                <field name="program_id"/>
+                <field name="subscription_id"/>
+                <field name="uses_included_consultation"/>
+                <field name="consultation_price"/>
+                <field name="nutritionist_id"/>
+                <field name="consultation_date"/>
+                <field name="invoice_id"/>
+                <field name="invoice_payment_state"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Nutrition Consultation Form -->
+    <record id="view_fitzone_nutrition_consultation_form" model="ir.ui.view">
+        <field name="name">fitzone.nutrition.consultation.form</field>
+        <field name="model">fitzone.nutrition.consultation</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button
+                        name="action_create_invoice"
+                        type="object"
+                        string="Create Invoice"
+                        class="btn-primary"
+                        invisible="uses_included_consultation or invoice_id"
+                    />
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name" readonly="1"/>
+                            <field name="subscriber_id"/>
+                            <field name="program_id"
+                                   domain="[('subscriber_id', '=', subscriber_id)]"/>
+                        </group>
+                        <group>
+                            <field name="nutritionist_id"/>
+                            <field name="consultation_date"/>
+                        </group>
+                    </group>
+
+                    <group string="Membership Benefit">
+                        <field name="uses_included_consultation"/>
+                        <field name="subscription_id"
+                               invisible="not uses_included_consultation"
+                               required="uses_included_consultation"
+                               domain="[('subscriber_id', '=', subscriber_id)]"/>
+                    </group>
+
+                    <group string="Pricing and Invoice">
+                        <field name="currency_id" invisible="1"/>
+                        <field name="consultation_price" readonly="1"/>
+                        <field name="invoice_id" readonly="1"/>
+                        <field name="invoice_payment_state" readonly="1"/>
+                    </group>
+
+                    <notebook>
+                        <page string="Consultation Notes">
+                            <field name="notes"/>
+                            <field name="recommendations"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Nutrition Consultation Price Setting -->
+    <record id="res_config_settings_view_form_nutrition"
+            model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.nutrition</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app name="fitzone_nutrition_settings"
+                     string="FitZone Nutrition">
+                    <block title="Nutrition Consultations">
+                        <setting
+                            id="fitzone_nutrition_consultation_price"
+                            string="Nutrition Consultation Price"
+                            help="Default price charged for a paid nutrition consultation.">
+                            <field name="nutrition_consultation_price"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_fitzone_nutrition_programs" model="ir.actions.act_window">
+        <field name="name">Nutrition Programs</field>
+        <field name="res_model">fitzone.nutrition.program</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_fitzone_nutrition_consultations" model="ir.actions.act_window">
+        <field name="name">Nutrition Consultations</field>
+        <field name="res_model">fitzone.nutrition.consultation</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+
+    <!-- Nutrition Configuration Action -->
+    <record id="action_fitzone_nutrition_configuration"
+            model="ir.actions.act_window">
+        <field name="name">Nutrition Configuration</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'fitzone_management'}</field>
+    </record>
+
+    <!-- Menus -->
+    <menuitem
+        id="menu_fitzone_nutrition_root"
+        name="Nutrition"
+        parent="fitzone_management.menu_fitzone_health_root"
+        sequence="30"
+        groups="base.group_user"
+    />
+
+    <menuitem
+        id="menu_fitzone_nutrition_programs"
+        name="Nutrition Programs"
+        parent="menu_fitzone_nutrition_root"
+        action="action_fitzone_nutrition_programs"
+        sequence="10"
+    />
+
+    <menuitem
+        id="menu_fitzone_nutrition_consultations"
+        name="Nutrition Consultations"
+        parent="menu_fitzone_nutrition_root"
+        action="action_fitzone_nutrition_consultations"
+        sequence="20"
+    />
+
+    <!-- Subscriber Profile Integration -->
+    <record id="view_fitzone_contact_form_nutrition" model="ir.ui.view">
+        <field name="name">fitzone.contact.form.nutrition</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <notebook position="inside">
+                <page
+                    string="Nutrition"
+                    invisible="not is_fitzone_subscriber"
+                    groups="fitzone_management.group_fitzone_nutritionist,fitzone_management.group_fitzone_management"
+                >
+                    <group>
+                        <field name="nutrition_program_ids" readonly="1">
+                            <list>
+                                <field name="name"/>
+                                <field name="nutritionist_id"/>
+                                <field name="start_date"/>
+                                <field name="end_date"/>
+                                <field name="status"/>
+                            </list>
+                        </field>
+                    </group>
+                    <group>
+                        <field name="nutrition_consultation_ids" readonly="1">
+                            <list>
+                                <field name="name"/>
+                                <field name="program_id"/>
+                                <field name="subscription_id"/>
+                                <field name="uses_included_consultation"/>
+                                <field name="consultation_price"/>
+                                <field name="nutritionist_id"/>
+                                <field name="consultation_date"/>
+                                <field name="invoice_id"/>
+                                <field name="invoice_payment_state"/>
+                            </list>
+                        </field>
+                    </group>
+                </page>
+            </notebook>
+        </field>
+    </record>
+
+
+    <menuitem
+        id="menu_fitzone_nutrition_configuration"
+        name="Nutrition Configuration"
+        parent="menu_fitzone_nutrition_root"
+        action="action_fitzone_nutrition_configuration"
+        sequence="30"
+    />
+
+</odoo>

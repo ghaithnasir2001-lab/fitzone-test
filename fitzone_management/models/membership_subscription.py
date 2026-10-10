@@ -236,9 +236,16 @@ class FitZoneMembershipSubscription(models.Model):
         readonly=True,
     )
 
+    nutrition_consultation_ids = fields.One2many(
+        'fitzone.nutrition.consultation',
+        'subscription_id',
+        string='Nutrition Consultations',
+    )
+
     used_nutrition_consultations = fields.Integer(
         string='Used Nutrition Consultations',
-        default=0,
+        compute='_compute_used_nutrition_consultations',
+        store=True,
     )
 
     remaining_nutrition_consultations = fields.Integer(
@@ -622,9 +629,6 @@ class FitZoneMembershipSubscription(models.Model):
             if record.used_physio_sessions < 0:
                 record.used_physio_sessions = 0
 
-            if record.used_nutrition_consultations < 0:
-                record.used_nutrition_consultations = 0
-
     @api.depends('price', 'discount')
     def _compute_final_price(self):
 
@@ -694,6 +698,18 @@ class FitZoneMembershipSubscription(models.Model):
                 - record.used_physio_sessions,
                 0,
             )
+    @api.depends(
+        'nutrition_consultation_ids',
+        'nutrition_consultation_ids.uses_included_consultation',
+    )
+    def _compute_used_nutrition_consultations(self):
+        for record in self:
+            record.used_nutrition_consultations = sum(
+                1
+                for consultation in record.nutrition_consultation_ids
+                if consultation.uses_included_consultation
+            )
+
 
     @api.depends(
         'included_nutrition_consultations',
