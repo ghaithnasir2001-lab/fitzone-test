@@ -237,6 +237,7 @@
                             <field name="physiotherapist_id"
                                    domain="[('fitzone_staff_type', '=', 'physiotherapist')]"/>
                             <field name="booking_id"/>
+                            <field name="subscription_id" readonly="1"/>
                         </group>
 
                         <group>

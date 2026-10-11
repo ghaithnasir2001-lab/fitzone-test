@@ -38,6 +38,14 @@ class FitZoneTreatment(models.Model):
         ondelete='restrict',
     )
 
+    subscription_id = fields.Many2one(
+        'fitzone.membership.subscription',
+        string='Membership Subscription',
+        readonly=True,
+        copy=False,
+        ondelete='restrict',
+    )
+
     treatment_type = fields.Char(
         string='Treatment Type',
     )
@@ -85,7 +93,8 @@ class FitZoneTreatment(models.Model):
                 != record.physiotherapist_id
             ):
                 raise ValidationError(
-                    'The treatment physiotherapist must match the rehabilitation file physiotherapist.'
+                    'The treatment physiotherapist must match the '
+                    'rehabilitation file physiotherapist.'
                 )
 
     @api.constrains('rehab_file_id', 'booking_id')
@@ -104,7 +113,8 @@ class FitZoneTreatment(models.Model):
                 != record.rehab_file_id.partner_id
             ):
                 raise ValidationError(
-                    'The treatment booking must belong to the rehabilitation file subscriber.'
+                    'The treatment booking must belong to the '
+                    'rehabilitation file subscriber.'
                 )
 
     @api.constrains('duration_minutes')
@@ -117,7 +127,6 @@ class FitZoneTreatment(models.Model):
 
     def action_complete(self):
         for record in self:
-
             if record.state == 'cancelled':
                 raise ValidationError(
                     'A cancelled treatment cannot be completed.'
@@ -135,7 +144,7 @@ class FitZoneTreatment(models.Model):
                 else fields.Date.context_today(record)
             )
 
-            subscription = self.env[
+            subscriptions = self.env[
                 'fitzone.membership.subscription'
             ].search(
                 [
@@ -144,21 +153,9 @@ class FitZoneTreatment(models.Model):
                         '=',
                         record.rehab_file_id.partner_id.id,
                     ),
-                    (
-                        'activation_date',
-                        '<=',
-                        usage_date,
-                    ),
-                    (
-                        'expiration_date',
-                        '>=',
-                        usage_date,
-                    ),
-                    (
-                        'status',
-                        '!=',
-                        'cancelled',
-                    ),
+                    ('activation_date', '<=', usage_date),
+                    ('expiration_date', '>=', usage_date),
+                    ('status', '=', 'active'),
                     (
                         'package_id.included_physio_sessions_per_month',
                         '>',
@@ -166,39 +163,42 @@ class FitZoneTreatment(models.Model):
                     ),
                 ],
                 order='activation_date desc, id desc',
-                limit=1,
             )
 
-            if subscription:
+            selected_subscription = False
 
+            for subscription in subscriptions:
                 period_start, period_end = (
-                    subscription._get_physio_period(
-                        usage_date
+                    subscription._get_physio_period(usage_date)
+                )
+
+                if not period_start or not period_end:
+                    continue
+
+                used_sessions = (
+                    subscription._count_completed_physio_treatments(
+                        period_start,
+                        period_end,
                     )
                 )
 
-                if period_start and period_end:
+                monthly_allowance = (
+                    subscription.package_id
+                    .included_physio_sessions_per_month
+                )
 
-                    used_sessions = (
-                        subscription
-                        ._count_completed_physio_treatments(
-                            period_start,
-                            period_end,
-                        )
-                    )
+                if used_sessions < monthly_allowance:
+                    selected_subscription = subscription
+                    break
 
-                    monthly_allowance = (
-                        subscription.package_id
-                        .included_physio_sessions_per_month
-                    )
+            if subscriptions and not selected_subscription:
+                raise ValidationError(
+                    'All included physiotherapy sessions for the '
+                    'eligible memberships have been used this month.'
+                )
 
-                    if used_sessions >= monthly_allowance:
-                        raise ValidationError(
-                            'The subscriber has used all included '
-                            'physiotherapy sessions for this '
-                            'membership month. '
-                            'Unused sessions do not roll over.'
-                        )
+            if selected_subscription:
+                record.subscription_id = selected_subscription
 
             record.state = 'completed'
 

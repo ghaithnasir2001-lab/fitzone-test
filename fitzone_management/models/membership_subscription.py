@@ -238,6 +238,13 @@ class FitZoneMembershipSubscription(models.Model):
         readonly=True,
     )
 
+    treatment_ids = fields.One2many(
+        'fitzone.treatment',
+        'subscription_id',
+        string='Physiotherapy Treatments',
+        readonly=True,
+    )
+
     nutrition_consultation_ids = fields.One2many(
         'fitzone.nutrition.consultation',
         'subscription_id',
@@ -737,7 +744,6 @@ class FitZoneMembershipSubscription(models.Model):
             period_start,
             time.min,
         )
-
         end_datetime = datetime.combine(
             period_end,
             time.max,
@@ -745,31 +751,11 @@ class FitZoneMembershipSubscription(models.Model):
 
         return self.env['fitzone.treatment'].sudo().search_count(
             [
-                (
-                    'rehab_file_id.partner_id',
-                    '=',
-                    self.subscriber_id.id,
-                ),
-                (
-                    'state',
-                    '=',
-                    'completed',
-                ),
-                (
-                    'booking_id.booking_type',
-                    '=',
-                    'physiotherapy',
-                ),
-                (
-                    'booking_id.start_datetime',
-                    '>=',
-                    start_datetime,
-                ),
-                (
-                    'booking_id.start_datetime',
-                    '<=',
-                    end_datetime,
-                ),
+                ('subscription_id', '=', self.id),
+                ('state', '=', 'completed'),
+                ('booking_id.booking_type', '=', 'physiotherapy'),
+                ('booking_id.start_datetime', '>=', start_datetime),
+                ('booking_id.start_datetime', '<=', end_datetime),
             ]
         )
 
@@ -779,6 +765,11 @@ class FitZoneMembershipSubscription(models.Model):
         'activation_date',
         'expiration_date',
         'status',
+        'treatment_ids',
+        'treatment_ids.state',
+        'treatment_ids.booking_id',
+        'treatment_ids.booking_id.start_datetime',
+        'treatment_ids.booking_id.booking_type',
     )
     def _compute_used_physio_sessions(self):
 
