@@ -2,6 +2,15 @@ from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 
 
+def _get_physio_session_price(env):
+    return float(
+        env["ir.config_parameter"].sudo().get_param(
+            "fitzone_management.physio_session_price",
+            default=0.0,
+        )
+    )
+
+
 class FitZoneTreatment(models.Model):
     _name = 'fitzone.treatment'
     _description = 'FitZone Treatment'
@@ -41,6 +50,31 @@ class FitZoneTreatment(models.Model):
     subscription_id = fields.Many2one(
         'fitzone.membership.subscription',
         string='Membership Subscription',
+        readonly=True,
+        copy=False,
+        ondelete='restrict',
+    )
+
+    session_type = fields.Selection(
+        [
+            ('included', 'Included in Membership'),
+            ('paid_extra', 'Paid Extra Session'),
+        ],
+        string='Session Type',
+        required=True,
+        default='included',
+    )
+
+    session_price = fields.Float(
+        string='Session Price (JOD)',
+        default=lambda self: _get_physio_session_price(self.env),
+        readonly=True,
+        copy=False,
+    )
+
+    invoice_id = fields.Many2one(
+        'account.move',
+        string='Invoice',
         readonly=True,
         copy=False,
         ondelete='restrict',
@@ -135,6 +169,16 @@ class FitZoneTreatment(models.Model):
             if record.state == 'completed':
                 continue
 
+            if record.session_type == 'paid_extra':
+                if not record.invoice_id:
+                    raise ValidationError(
+                        'Create an invoice for the paid extra '
+                        'physiotherapy session before completing it.'
+                    )
+                record.subscription_id = False
+                record.state = 'completed'
+                continue
+
             usage_date = (
                 fields.Datetime.to_datetime(
                     record.booking_id.start_datetime
@@ -191,16 +235,95 @@ class FitZoneTreatment(models.Model):
                     selected_subscription = subscription
                     break
 
-            if subscriptions and not selected_subscription:
+            if not selected_subscription:
                 raise ValidationError(
-                    'All included physiotherapy sessions for the '
-                    'eligible memberships have been used this month.'
+                    'No included physiotherapy sessions are available. '
+                    'Select Paid Extra Session and create its invoice '
+                    'to complete this treatment.'
                 )
 
-            if selected_subscription:
-                record.subscription_id = selected_subscription
-
+            record.subscription_id = selected_subscription
             record.state = 'completed'
+
+    def action_create_invoice(self):
+        self.ensure_one()
+
+        if self.session_type != 'paid_extra':
+            raise ValidationError(
+                'Only paid extra physiotherapy sessions require an invoice.'
+            )
+
+        if self.state != 'scheduled':
+            raise ValidationError(
+                'Create the invoice before completing the treatment.'
+            )
+
+        if self.invoice_id:
+            raise ValidationError('An invoice already exists.')
+
+        price = _get_physio_session_price(self.env)
+        if price <= 0:
+            raise ValidationError(
+                'The manager must configure an extra physiotherapy '
+                'session price greater than zero in FitZone settings.'
+            )
+
+        company = self.env.company
+        income_account = self.env['account.account'].search([
+            ('company_ids', 'in', [company.id]),
+            ('account_type', 'in', ['income', 'income_other']),
+        ], limit=1)
+
+        if not income_account:
+            raise ValidationError(
+                'No income account is configured for this company.'
+            )
+
+        tax = self.env['account.tax'].search([
+            ('company_id', '=', company.id),
+            ('type_tax_use', '=', 'sale'),
+            ('amount', '=', 16.0),
+            ('active', '=', True),
+        ], limit=1)
+
+        if not tax:
+            raise ValidationError(
+                'The active 16% sales tax was not found for this company.'
+            )
+
+        invoice = self.env['account.move'].create({
+            'move_type': 'out_invoice',
+            'partner_id': self.rehab_file_id.partner_id.id,
+            'company_id': company.id,
+            'invoice_date': fields.Date.context_today(self),
+            'invoice_line_ids': [
+                fields.Command.create({
+                    'name': (
+                        f'{self.name} - Extra Physiotherapy Session'
+                    ),
+                    'quantity': 1.0,
+                    # Configured price includes 16% sales tax.
+                    'price_unit': price / 1.16,
+                    'account_id': income_account.id,
+                    'tax_ids': [fields.Command.set([tax.id])],
+                }),
+            ],
+        })
+
+        invoice.action_post()
+        self.write({
+            'invoice_id': invoice.id,
+            'session_price': price,
+        })
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Physiotherapy Invoice',
+            'res_model': 'account.move',
+            'view_mode': 'form',
+            'res_id': invoice.id,
+            'target': 'current',
+        }
 
     def action_cancel(self):
         for record in self:

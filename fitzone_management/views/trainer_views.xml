@@ -176,6 +176,14 @@
                     />
 
                     <button
+                        name="action_create_invoice"
+                        string="Create Invoice"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state != 'confirmed' or session_type != 'paid_extra' or invoice_id"
+                    />
+
+                    <button
                         name="action_mark_attended"
                         string="Mark Attended"
                         type="object"
@@ -207,6 +215,24 @@
                             <field name="trainer_id"/>
                             <field name="subscriber_id"/>
                             <field name="membership_id"/>
+                            <field
+                                name="session_type"
+                                readonly="state != 'draft'"
+                            />
+                            <field
+                                name="session_price"
+                                invisible="session_type != 'paid_extra'"
+                                readonly="1"
+                            />
+                            <field
+                                name="invoice_id"
+                                readonly="1"
+                                invisible="not invoice_id"
+                            />
+                            <field
+                                name="invoice_payment_state"
+                                invisible="not invoice_id"
+                            />
                         </group>
 
                         <group>

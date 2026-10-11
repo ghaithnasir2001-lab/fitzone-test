@@ -154,6 +154,14 @@ class FitZoneNutritionConsultation(models.Model):
         default=fields.Date.context_today,
     )
 
+    start_datetime = fields.Datetime(
+        string='Start Date & Time',
+    )
+
+    end_datetime = fields.Datetime(
+        string='End Date & Time',
+    )
+
     state = fields.Selection(
         [
             ('scheduled', 'Scheduled'),
@@ -274,6 +282,56 @@ class FitZoneNutritionConsultation(models.Model):
                 )
 
         return super().write(vals)
+
+    @api.constrains(
+        'subscriber_id', 'start_datetime', 'end_datetime', 'state'
+    )
+    def _check_appointment_overlap(self):
+        for record in self:
+            if record.state == 'cancelled':
+                continue
+
+            if not record.subscriber_id or not record.start_datetime or not record.end_datetime:
+                raise ValidationError(
+                    'Enter the consultation start and end date/time.'
+                )
+
+            if record.end_datetime <= record.start_datetime:
+                raise ValidationError(
+                    'The consultation end time must be after its start time.'
+                )
+
+            overlap_domain = [
+                ('subscriber_id', '=', record.subscriber_id.id),
+                ('state', '!=', 'cancelled'),
+                ('start_datetime', '<', record.end_datetime),
+                ('end_datetime', '>', record.start_datetime),
+            ]
+
+            if self.env['fitzone.booking'].search_count([
+                ('subscriber_id', '=', record.subscriber_id.id),
+                ('status', '!=', 'cancelled'),
+                ('start_datetime', '<', record.end_datetime),
+                ('end_datetime', '>', record.start_datetime),
+            ], limit=1):
+                raise ValidationError(
+                    'This subscriber already has another booking during this time.'
+                )
+
+            if self.env['fitzone.trainer.booking'].search_count(
+                overlap_domain, limit=1
+            ):
+                raise ValidationError(
+                    'This subscriber already has another booking during this time.'
+                )
+
+            other_consultation_domain = overlap_domain + [
+                ('id', '!=', record.id)
+            ]
+            if self.search_count(other_consultation_domain, limit=1):
+                raise ValidationError(
+                    'This subscriber already has another booking during this time.'
+                )
 
     @api.constrains('subscriber_id')
     def _check_subscriber(self):
@@ -515,5 +573,19 @@ class ResConfigSettings(models.TransientModel):
         config_parameter=(
             'fitzone_management.nutrition_consultation_price'
         ),
+        default=0.0,
+    )
+
+    trainer_pt_session_price = fields.Float(
+        string="Personal Training Session Price (JOD)",
+        config_parameter=(
+            "fitzone_management.trainer_pt_session_price"
+        ),
+        default=0.0,
+    )
+
+    physio_session_price = fields.Float(
+        string="Extra Physiotherapy Session Price (JOD)",
+        config_parameter="fitzone_management.physio_session_price",
         default=0.0,
     )
