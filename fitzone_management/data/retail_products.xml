@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_health_product" model="product.template">
+        <field name="name">Health Product</field>
+        <field name="fitzone_kind">retail</field>
+        <field name="product_type">health</field>
+        <field name="categ_id" ref="fitzone_management.product_category_health"/>
+        <field name="list_price">10.0</field>
+        <field name="is_storable">True</field>
+        <field name="tracking">lot</field>
+        <field name="use_expiration_date">True</field>
+    </record>
+
+    <record id="product_supplement" model="product.template">
+        <field name="name">Supplement</field>
+        <field name="fitzone_kind">retail</field>
+        <field name="product_type">supplement</field>
+        <field name="categ_id" ref="fitzone_management.product_category_supplements"/>
+        <field name="list_price">20.0</field>
+        <field name="is_storable">True</field>
+        <field name="tracking">lot</field>
+        <field name="use_expiration_date">True</field>
+    </record>
+
+    <record id="product_juice" model="product.template">
+        <field name="name">Juice</field>
+        <field name="fitzone_kind">retail</field>
+        <field name="product_type">juice</field>
+        <field name="categ_id" ref="fitzone_management.product_category_juices"/>
+        <field name="list_price">5.0</field>
+        <field name="is_storable">False</field>
+        <field name="tracking">none</field>
+        <field name="use_expiration_date">False</field>
+    </record>
+
+    <record id="product_snack" model="product.template">
+        <field name="name">Snack</field>
+        <field name="fitzone_kind">retail</field>
+        <field name="product_type">snack</field>
+        <field name="categ_id" ref="fitzone_management.product_category_snacks"/>
+        <field name="list_price">4.0</field>
+        <field name="is_storable">False</field>
+        <field name="tracking">none</field>
+        <field name="use_expiration_date">False</field>
+    </record>
+</odoo>

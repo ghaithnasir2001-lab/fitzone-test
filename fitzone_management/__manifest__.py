@@ -29,6 +29,9 @@
         'data/injury_rehab_sequence.xml',
         'data/membership_email_template.xml',
         'data/payment_sequence.xml',
+        'data/retail_categories.xml',
+        'data/retail_products.xml',
+        'data/retail_pricelist.xml',
 
         'views/membership_package_views.xml',
         'views/membership_subscription_views.xml',
