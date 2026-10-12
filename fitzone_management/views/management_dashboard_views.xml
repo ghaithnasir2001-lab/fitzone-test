@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Injury Statistics Graph -->
+    <record id="view_fitzone_injury_cause_graph"
+            model="ir.ui.view">
+        <field name="name">fitzone.injury.cause.graph</field>
+        <field name="model">fitzone.injury</field>
+        <field name="arch" type="xml">
+            <graph string="Injuries by Cause" type="bar">
+                <field name="cause_id" type="row"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_fitzone_management_dashboard_form"
+            model="ir.ui.view">
+        <field name="name">fitzone.management.dashboard.form</field>
+        <field name="model">fitzone.management.dashboard</field>
+        <field name="arch" type="xml">
+            <form string="FitZone Management Dashboard"
+                  create="false"
+                  edit="false">
+                <sheet>
+
+                    <div class="oe_title mb-4">
+                        <h1>FitZone</h1>
+                        <p class="text-muted">
+                            Management Overview
+                        </p>
+                    </div>
+
+                    <!-- Financial Overview -->
+                    <div class="mb-3">
+                        <h2>Financial Overview</h2>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <div class="card h-100 border-0 shadow-sm bg-light">
+                                <div class="card-body">
+                                    <div class="text-muted">
+                                        Membership Payments Today
+                                    </div>
+                                    <h2 class="text-success mt-2">
+                                        <field name="revenue_today"
+                                               nolabel="1"/>
+                                    </h2>
+                                    <button name="action_open_revenue_today"
+                                            type="object"
+                                            string="View Payments"
+                                            class="btn btn-primary mt-2"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <div class="card h-100 border-0 shadow-sm bg-light">
+                                <div class="card-body">
+                                    <div class="text-muted">
+                                        Outstanding Payments
+                                    </div>
+                                    <h2 class="mt-2">
+                                        <field name="outstanding_payments"
+                                               nolabel="1"/>
+                                    </h2>
+                                    <button name="action_open_outstanding_payments"
+                                            type="object"
+                                            string="View Outstanding"
+                                            class="btn btn-primary mt-2"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                        <div class="card h-100 border-0 shadow-sm bg-light">
+                            <div class="card-body">
+                                <div class="text-muted">
+                                    Membership Payments This Month
+                                </div>
+                                <h2 class="text-success mt-2">
+                                    <field name="revenue_month"
+                                           nolabel="1"/>
+                                </h2>
+                                <button name="action_open_revenue_month"
+                                        type="object"
+                                        string="View Payments"
+                                        class="btn btn-primary mt-2"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Membership Overview -->
+                    <div class="mb-3 mt-4">
+                        <h2>Membership Overview</h2>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <div class="card h-100 border-0 shadow-sm bg-light">
+                                <div class="card-body">
+                                    <div class="text-muted">
+                                        Active Memberships
+                                    </div>
+                                    <h2 class="mt-2">
+                                        <field name="active_memberships"
+                                               nolabel="1"/>
+                                    </h2>
+                                    <button name="action_open_active_memberships"
+                                            type="object"
+                                            string="View Members"
+                                            class="btn btn-primary mt-2"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <div class="card h-100 border-0 shadow-sm bg-light">
+                                <div class="card-body">
+                                    <div class="text-muted">
+                                        Expiring Within 7 Days
+                                    </div>
+                                    <h2 class="mt-2">
+                                        <field name="expiring_soon"
+                                               nolabel="1"/>
+                                    </h2>
+                                    <button name="action_open_expiring_soon"
+                                            type="object"
+                                            string="View Members"
+                                            class="btn btn-primary mt-2"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Daily Operations -->
+                    <div class="mb-3 mt-4">
+                        <h2>Today's Operations</h2>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <div class="card h-100 border-0 shadow-sm bg-light">
+                                <div class="card-body">
+                                    <div class="text-muted">
+                                        Check-ins Today
+                                    </div>
+                                    <h2 class="mt-2">
+                                        <field name="checkins_today"
+                                               nolabel="1"/>
+                                    </h2>
+                                    <button name="action_open_checkins_today"
+                                            type="object"
+                                            string="View Check-ins"
+                                            class="btn btn-primary mt-2"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <div class="card h-100 border-0 shadow-sm bg-light">
+                                <div class="card-body">
+                                    <div class="text-muted">
+                                        Classes Today
+                                    </div>
+                                    <h2 class="mt-2">
+                                        <field name="classes_today"
+                                               nolabel="1"/>
+                                    </h2>
+                                    <button name="action_open_classes_today"
+                                            type="object"
+                                            string="View Classes"
+                                            class="btn btn-primary mt-2"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Management Alerts -->
+                    <div class="mb-3 mt-4">
+                        <h2>Management Alerts</h2>
+                        <p class="text-muted">
+                            Items that may require management attention
+                        </p>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <div class="card h-100 border-0 shadow-sm bg-light">
+                                <div class="card-body">
+                                    <div class="text-muted">
+                                        Overdue Installments
+                                    </div>
+                                    <h2 class="text-danger mt-2">
+                                        <field name="overdue_installments"
+                                               nolabel="1"/>
+                                    </h2>
+                                    <button name="action_open_overdue_installments"
+                                            type="object"
+                                            string="Review Payments"
+                                            class="btn btn-primary mt-2"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <div class="card h-100 border-0 shadow-sm bg-light">
+                                <div class="card-body">
+                                    <div class="text-muted">
+                                        Open Rehabilitation Files
+                                    </div>
+                                    <h2 class="text-warning mt-2">
+                                        <field name="open_rehab_files"
+                                               nolabel="1"/>
+                                    </h2>
+                                    <button name="action_open_rehab_files"
+                                            type="object"
+                                            string="View Files"
+                                            class="btn btn-primary mt-2"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Injury Statistics -->
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <div class="card h-100 border-0 shadow-sm bg-light">
+                                <div class="card-body">
+                                    <div class="text-muted">
+                                        Injury Statistics
+                                    </div>
+                                    <h2 class="text-danger mt-2">
+                                        <i class="fa fa-bar-chart" title="Injury Statistics"/>
+                                    </h2>
+                                    <button name="action_open_injury_statistics"
+                                            type="object"
+                                            string="View Chart"
+                                            class="btn btn-primary mt-2"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_fitzone_management_dashboard"
+            model="ir.actions.act_window">
+        <field name="name">Management Dashboard</field>
+        <field name="res_model">fitzone.management.dashboard</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+
+    <menuitem
+        id="menu_fitzone_management_dashboard"
+        name="Management Dashboard"
+        parent="menu_fitzone_root"
+        action="action_fitzone_management_dashboard"
+        sequence="1"
+    />
+
+</odoo>

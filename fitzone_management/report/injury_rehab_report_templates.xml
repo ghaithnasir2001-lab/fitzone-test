@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_injury_rehab_report" model="ir.actions.report">
+        <field name="name">Injury Report</field>
+        <field name="model">fitzone.injury</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">fitzone_management.report_injury_rehab_document</field>
+        <field name="report_file">fitzone_management.report_injury_rehab_document</field>
+        <field name="binding_model_id" ref="model_fitzone_injury"/>
+        <field name="binding_type">report</field>
+        <field name="binding_view_types">form</field>
+        <field name="print_report_name">'Injury Report - %s' % (object.name)</field>
+    </record>
+
+    <template id="report_injury_rehab_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="injury">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>FitZone Injury Report</h2>
+
+                        <h3>Injury Details</h3>
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th>Injury Reference</th>
+                                    <td><span t-field="injury.name"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Subscriber</th>
+                                    <td><span t-field="injury.partner_id"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Injury Date</th>
+                                    <td><span t-field="injury.injury_date"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Cause</th>
+                                    <td><span t-field="injury.cause_id"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Reported By</th>
+                                    <td><span t-field="injury.reported_by"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Severity</th>
+                                    <td><span t-field="injury.severity"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Status</th>
+                                    <td><span t-field="injury.state"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Description</th>
+                                    <td>
+                                        <span t-field="injury.description"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Restrictions</th>
+                                    <td>
+                                        <span t-field="injury.restrictions"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Forbidden Movements</th>
+                                    <td>
+                                        <span t-field="injury.forbidden_movements"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <t t-set="rehab"
+                           t-value="rehab_by_injury.get(injury.id)"/>
+
+                        <h3 class="mt-4">Rehabilitation Details</h3>
+
+                        <t t-if="rehab">
+                            <table class="table table-sm table-bordered">
+                                <tbody>
+                                    <tr>
+                                        <th>Rehabilitation Reference</th>
+                                        <td><span t-field="rehab.name"/></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Physiotherapist</th>
+                                        <td>
+                                            <span t-if="rehab.physiotherapist_id"
+                                                  t-field="rehab.physiotherapist_id"/>
+                                            <span t-else="">Not Assigned</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Opening Date</th>
+                                        <td><span t-field="rehab.opening_date"/></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Closing Date</th>
+                                        <td>
+                                            <span t-if="rehab.closing_date"
+                                                  t-field="rehab.closing_date"/>
+                                            <span t-else="">Not Closed</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Rehabilitation Status</th>
+                                        <td><span t-field="rehab.state"/></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Diagnosis</th>
+                                        <td><span t-field="rehab.diagnosis"/></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Rehabilitation Plan</th>
+                                        <td>
+                                            <span t-field="rehab.rehabilitation_plan"/>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </t>
+                        <t t-else="">
+                            <p>No rehabilitation file is linked to this injury.</p>
+                        </t>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>
