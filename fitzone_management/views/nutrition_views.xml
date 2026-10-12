@@ -168,7 +168,7 @@
         <field name="arch" type="xml">
             <xpath expr="//form" position="inside">
                 <app name="fitzone_nutrition_settings"
-                     string="FitZone Nutrition">
+                     string="FitZone">
                     <block title="Nutrition Consultations">
                         <setting
                             id="fitzone_nutrition_consultation_price"

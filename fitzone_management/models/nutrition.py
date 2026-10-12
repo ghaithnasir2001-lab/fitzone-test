@@ -448,20 +448,40 @@ class FitZoneNutritionConsultation(models.Model):
                     'for this membership.'
                 )
 
+
     def action_mark_completed(self):
         for record in self:
             if record.state == 'cancelled':
                 raise ValidationError(
                     'A cancelled consultation cannot be completed.'
                 )
+
             if record.state == 'completed':
                 continue
+
+            # Included consultations remain free.
             if record.uses_included_consultation:
                 record._check_included_consultation()
+            else:
+                # Extra paid consultations require a paid invoice.
+                if not record.invoice_id:
+                    raise ValidationError(
+                        'Create the consultation invoice and register '
+                        'the payment before completing this consultation.'
+                    )
+
+                if record.invoice_id.payment_state != 'paid':
+                    raise ValidationError(
+                        'The consultation must be fully paid before '
+                        'attendance can be confirmed.'
+                    )
+
             record.with_context(
                 _allow_nutrition_state_transition=True
             ).write({'state': 'completed'})
+
         return True
+
 
     def action_cancel(self):
         for record in self:

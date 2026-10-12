@@ -244,7 +244,8 @@
                             <field name="rehab_file_id"/>
                             <field name="physiotherapist_id"
                                    domain="[('fitzone_staff_type', '=', 'physiotherapist')]"/>
-                            <field name="booking_id"/>
+                            <field name="booking_id"
+                                   domain="[('booking_type', '=', 'physiotherapy')]"/>
                             <field name="subscription_id" readonly="1"/>
                             <field name="session_type"/>
                             <field name="session_price" readonly="1"/>
