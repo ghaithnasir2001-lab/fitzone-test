@@ -12,6 +12,7 @@
         'hr',
         'mail',
         'account',
+        'maintenance',
     ],
     'data': [
         'security/fitzone_groups.xml',
@@ -25,12 +26,14 @@
         'data/injury_rehab_sequence.xml',
         'data/membership_email_template.xml',
         'data/payment_sequence.xml',
+        'data/equipment_maintenance_sequence.xml',
 
         'views/membership_package_views.xml',
         'views/membership_subscription_views.xml',
         'views/membership_freeze_views.xml',
         'views/checkin_views.xml',
         'views/membership_payment_views.xml',
+        'views/equipment_maintenance_views.xml',
 
         'views/facility_views.xml',
         'views/class_views.xml',
