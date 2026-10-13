@@ -41,6 +41,7 @@
         'report/booking_details_report_templates.xml',
         'report/membership_details_report_templates.xml',
         'report/injury_rehab_report_templates.xml',
+        'report/rehabilitation_files_report_templates.xml',
         'views/subscriber_views.xml',
         'views/health_views.xml',
         'views/injury_rehab_views.xml',

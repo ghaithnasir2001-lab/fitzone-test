@@ -66,6 +66,25 @@ class FitZoneManagementDashboard(models.TransientModel):
         compute='_compute_dashboard_kpis',
     )
 
+    def _get_membership_invoices(self):
+        Installment = self.env['fitzone.membership.installment']
+        Subscription = self.env['fitzone.membership.subscription']
+
+        installment_invoices = Installment.search([
+            ('invoice_id.state', '=', 'posted'),
+            ('invoice_id.move_type', '=', 'out_invoice'),
+            ('invoice_id.company_id', '=', self.env.company.id),
+        ]).mapped('invoice_id')
+
+        full_invoices = Subscription.search([
+            ('payment_plan', '=', 'full'),
+            ('invoice_id.state', '=', 'posted'),
+            ('invoice_id.move_type', '=', 'out_invoice'),
+            ('invoice_id.company_id', '=', self.env.company.id),
+        ]).mapped('invoice_id')
+
+        return installment_invoices | full_invoices
+
     @api.depends_context('uid', 'company')
     def _compute_dashboard_kpis(self):
         Membership = self.env['fitzone.membership.subscription']
@@ -119,16 +138,13 @@ class FitZoneManagementDashboard(models.TransientModel):
                 ('state', '=', 'open'),
             ])
 
-            # Outstanding balances on posted membership invoices.
-            installments = Installment.search([
-                ('invoice_id.state', '=', 'posted'),
-                ('invoice_id.move_type', '=', 'out_invoice'),
-                ('invoice_id.amount_residual', '>', 0.01),
-            ])
+            # Outstanding balances on all membership invoices.
+            invoices = dashboard._get_membership_invoices()
 
             outstanding = 0.0
-            for installment in installments:
-                invoice = installment.invoice_id
+            for invoice in invoices.filtered(
+                lambda inv: inv.amount_residual > 0.01
+            ):
                 outstanding += invoice.currency_id._convert(
                     invoice.amount_residual,
                     company.currency_id,
@@ -138,12 +154,7 @@ class FitZoneManagementDashboard(models.TransientModel):
 
             dashboard.outstanding_payments = outstanding
 
-            # Count receipts today only when linked to a membership invoice.
-            invoices = Installment.search([
-                ('invoice_id.state', '=', 'posted'),
-                ('invoice_id.move_type', '=', 'out_invoice'),
-            ]).mapped('invoice_id')
-
+            # Payments received today for membership invoices.
             payments = Payment.browse()
             if invoices:
                 payments = Payment.search([
@@ -165,8 +176,7 @@ class FitZoneManagementDashboard(models.TransientModel):
 
             dashboard.revenue_today = revenue
 
-            # Membership payments received from the start of this month
-            # through today.
+            # Membership payments received from the start of this month.
             month_payments = Payment.browse()
             if invoices:
                 month_payments = Payment.search([
@@ -201,12 +211,7 @@ class FitZoneManagementDashboard(models.TransientModel):
 
     def action_open_revenue_today(self):
         today = fields.Date.context_today(self)
-        invoices = self.env[
-            'fitzone.membership.installment'
-        ].search([
-            ('invoice_id.state', '=', 'posted'),
-            ('invoice_id.move_type', '=', 'out_invoice'),
-        ]).mapped('invoice_id')
+        invoices = self._get_membership_invoices()
 
         domain = [
             ('company_id', '=', self.env.company.id),
@@ -225,13 +230,7 @@ class FitZoneManagementDashboard(models.TransientModel):
     def action_open_revenue_month(self):
         today = fields.Date.context_today(self)
         month_start = today.replace(day=1)
-
-        invoices = self.env[
-            'fitzone.membership.installment'
-        ].search([
-            ('invoice_id.state', '=', 'posted'),
-            ('invoice_id.move_type', '=', 'out_invoice'),
-        ]).mapped('invoice_id')
+        invoices = self._get_membership_invoices()
 
         domain = [
             ('company_id', '=', self.env.company.id),
@@ -249,13 +248,14 @@ class FitZoneManagementDashboard(models.TransientModel):
         )
 
     def action_open_outstanding_payments(self):
+        invoices = self._get_membership_invoices()
+
         return self._open_records(
             'Outstanding Membership Invoices',
-            'fitzone.membership.installment',
+            'account.move',
             [
-                ('invoice_id.state', '=', 'posted'),
-                ('invoice_id.move_type', '=', 'out_invoice'),
-                ('invoice_id.amount_residual', '>', 0.01),
+                ('id', 'in', invoices.ids),
+                ('amount_residual', '>', 0.01),
             ],
         )
 
@@ -325,6 +325,7 @@ class FitZoneManagementDashboard(models.TransientModel):
             'fitzone.rehab.file',
             [('state', '=', 'open')],
         )
+
     def action_open_injury_statistics(self):
         return {
             'type': 'ir.actions.act_window',
