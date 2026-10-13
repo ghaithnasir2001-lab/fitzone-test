@@ -16,7 +16,6 @@ class FitZoneMembershipPackage(models.Model):
         [
             ('general', 'General'),
             ('private', 'Private'),
-            ('all_inclusive', 'All-Inclusive'),
         ],
         string='Package Type',
         required=True,
@@ -100,26 +99,26 @@ class FitZoneMembershipPackage(models.Model):
         }
 
         if is_all_inclusive or package_type == 'all_inclusive':
-            general_package = self.search(
-                [
-                    ('package_type', '=', 'general'),
-                    ('is_all_inclusive', '=', False),
-                    ('duration_months', '=', duration_months),
-                    ('currency_id', '=', currency_id),
-                    ('active', '=', True),
-                ],
-                limit=1,
-            )
+            base_price=fixed_prices.get(('general',duration_months))
 
-            if general_package:
-                return general_package.price + 20.0
+            if base_price is None:
+                general_package = self.search(
+                    [
+                        ('package_type', '=', 'general'),
+                        ('is_all_inclusive', '=', False),
+                        ('duration_months', '=', duration_months),
+                        ('currency_id', '=', currency_id),
+                        ('active', '=', True),
+                    ],
+                    limit=1,
+                )
+                if general_package:
+                    base_price = general_package.price
 
-            return 0.0
+            if base_price is None:
+                return 0.0
 
-        return fixed_prices.get(
-            (package_type, duration_months),
-            0.0,
-        )
+            return base_price + 20.0
 
 
     @api.model_create_multi
@@ -201,13 +200,6 @@ class FitZoneMembershipPackage(models.Model):
                 else:
                     record.included_physio_sessions_per_month = 0
                     record.included_nutrition_consultations = 0
-
-            elif record.package_type == 'all_inclusive':
-
-                record.is_all_inclusive = False
-                record.included_pt_sessions = 0
-                record.included_physio_sessions_per_month = 2
-                record.included_nutrition_consultations = 1
 
             record.price = record._get_suggested_price(
                 record.package_type,
@@ -328,23 +320,4 @@ class FitZoneMembershipPackage(models.Model):
                     raise ValidationError(
                         'Private membership cannot include nutrition '
                         'consultations.'
-                    )
-
-            elif record.package_type == 'all_inclusive':
-
-                if record.included_physio_sessions_per_month != 2:
-                    raise ValidationError(
-                        'All-Inclusive membership must include 2 physiotherapy '
-                        'sessions per month.'
-                    )
-
-                if record.included_nutrition_consultations != 1:
-                    raise ValidationError(
-                        'All-Inclusive membership must include 1 nutrition '
-                        'consultation for the membership duration.'
-                    )
-
-                if record.price <= 0:
-                    raise ValidationError(
-                        'All-Inclusive membership requires a valid price.'
                     )

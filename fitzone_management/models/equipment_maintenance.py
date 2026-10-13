@@ -1,5 +1,5 @@
 from odoo import api, fields, models, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 MANAGEMENT_GROUP = "fitzone_management.group_fitzone_management"
 
@@ -26,9 +26,22 @@ class MaintenanceEquipment(models.Model):
                 )
 
             for equipment in self:
+                is_scrapped = self.env["maintenance.request"].search_count([
+                    ("equipment_id", "=", equipment.id),
+                    ("stage_id.name", "=", "Scrap"),
+                ])
+                if is_scrapped:
+                    raise UserError(
+                        _("This equipment has been scrapped and cannot be returned to service.")
+                    )
+
                 open_requests = self.env["maintenance.request"].search_count([
                     ("equipment_id", "=", equipment.id),
                     ("stage_id.done", "=", False),
+                    ("archive", "=", False),
+                    "|",
+                    ("schedule_date", "<=", fields.Datetime.now()),
+                    ("stage_id.name", "=", "In Progress"),
                 ])
 
                 pending_malfunctions = self.env[
@@ -48,7 +61,7 @@ class MaintenanceEquipment(models.Model):
 
         return super().write(vals)
 
-    
+
     def action_fitzone_return_to_service(self):
         if not self.env.user.has_group(MANAGEMENT_GROUP):
             raise UserError(
@@ -56,10 +69,23 @@ class MaintenanceEquipment(models.Model):
             )
 
         for equipment in self:
+            is_scrapped = self.env["maintenance.request"].search_count([
+                    ("equipment_id", "=", equipment.id),
+                    ("stage_id.name", "=", "Scrap"),
+            ])
+
+            if is_scrapped:
+                raise UserError(
+                    _("This equipment has been scrapped and cannot be returned to service.")
+                )
+
             open_requests = self.env["maintenance.request"].search_count([
                 ("equipment_id", "=", equipment.id),
                 ("stage_id.done", "=", False),
                 ("archive", "=", False),
+                "|",
+                ("schedule_date", "<=", fields.Datetime.now()),
+                ("stage_id.name", "=", "In Progress"),
             ])
 
             pending_malfunctions = self.env[
@@ -335,6 +361,16 @@ class MaintenanceRequest(models.Model):
         readonly=True,
     )
 
+    @api.constrains('fitzone_estimated_cost', 'fitzone_estimated_hours', 'fitzone_actual_hours')
+    def _check_positive_cost_and_hours(self):
+        for request in self:
+            if request.fitzone_estimated_cost < 0:
+                raise ValidationError(_("Estimated Maintenance Cost cannot be negative."))
+            if request.fitzone_estimated_hours < 0:
+                raise ValidationError(_("Estimated Maintenance Hours cannot be negative."))
+            if request.fitzone_actual_hours < 0:
+                raise ValidationError(_("Actual Maintenance Hours cannot be negative."))
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -436,7 +472,7 @@ class MaintenanceRequest(models.Model):
                 "fitzone_approval_state": "approved",
             })
 
-    
+
     def write(self, vals):
         if "fitzone_approval_state" in vals:
             raise UserError(

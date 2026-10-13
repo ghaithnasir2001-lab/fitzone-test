@@ -59,7 +59,7 @@
                         <page string="Notes">
                             <field name="note"/>
                         </page>
-                        
+
                         <page string="Maintenance History">
                             <field name="maintenance_ids" readonly="1">
                                 <list>
@@ -172,6 +172,10 @@
         <field name="name">Report Equipment Malfunction</field>
         <field name="res_model">fitzone.equipment.malfunction</field>
         <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_fitzone_equipment_malfunction_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_fitzone_equipment_malfunction_form')})
+        ]"/>
     </record>
 
     <!-- =========================================================
@@ -204,6 +208,7 @@
     <record id="view_fitzone_maintenance_request_form" model="ir.ui.view">
         <field name="name">fitzone.maintenance.request.form</field>
         <field name="model">maintenance.request</field>
+        <field name="priority">1</field>
         <field name="arch" type="xml">
             <form string="FitZone Maintenance Request">
                 <header>
@@ -213,12 +218,12 @@
                             class="btn-primary"
                             groups="fitzone_management.group_fitzone_management"
                             invisible="maintenance_type != 'preventive' or fitzone_approval_state != 'pending'"/>
-                         
+                    <field name="fitzone_approval_state" invisible="1"/>
                     <field name="fitzone_approval_state" widget="statusbar"
                            statusbar_visible="pending,approved"
                            readonly="1"/>
                     <field name="stage_id" widget="statusbar"
-                           options="{'clickable': false}"/>
+                           options="{'clickable': true}"/>
                 </header>
                 <sheet>
                     <group>
@@ -237,6 +242,11 @@
                             <field name="schedule_end"/>
                             <field name="duration" readonly="1"/>
                             <field name="close_date" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Cost and Work">
+                        <group>
                             <field name="fitzone_estimated_cost"/>
                             <field name="fitzone_estimated_hours"/>
                             <field name="fitzone_actual_hours"/>
@@ -284,6 +294,10 @@
         <field name="name">Maintenance Requests</field>
         <field name="res_model">maintenance.request</field>
         <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_fitzone_maintenance_request_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_fitzone_maintenance_request_form')})
+        ]"/>
     </record>
 
     <!-- =========================================================
