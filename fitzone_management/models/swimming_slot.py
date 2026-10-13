@@ -44,13 +44,22 @@ class FitZoneSwimmingSlot(models.Model):
         required=True
     )
 
+    trainer_id = fields.Many2one(
+        'fitzone.trainer',
+        string='Trainer',
+        ondelete='restrict'
+    )
+
     price = fields.Float(
         string='Price'
     )
 
     created_by = fields.Many2one(
         'hr.employee',
-        string='Created By'
+        string='Created By',
+        domain=[
+            ('fitzone_staff_type', '=', 'receptionist')
+        ]
     )
 
     @api.depends(
@@ -100,6 +109,19 @@ class FitZoneSwimmingSlot(models.Model):
             record.name = (
                 f'{slot_type} — {time_range}'
             )
+
+    @api.constrains('slot_type', 'trainer_id')
+    def _check_trainer_required(self):
+        for record in self:
+            if record.slot_type in ('group', 'private') and not record.trainer_id:
+                raise ValidationError(
+                    'A trainer is required for Group and Private swimming slots.'
+                )
+
+            if record.slot_type == 'free' and record.trainer_id:
+                raise ValidationError(
+                    'A trainer cannot be assigned to a Free swimming slot.'
+                )
 
     @api.constrains('facility_id')
     def _check_facility_booking_method(self):

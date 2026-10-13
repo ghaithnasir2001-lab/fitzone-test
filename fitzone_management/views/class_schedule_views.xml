@@ -26,6 +26,7 @@
         <field name="arch" type="xml">
             <list>
                 <field name="class_id"/>
+                <field name="trainer_id"/>
                 <field name="facility_id"/>
                 <field name="start_datetime"/>
                 <field name="end_datetime"/>
@@ -43,6 +44,7 @@
                     <group>
 
                         <field name="class_id"/>
+                        <field name="trainer_id"/>
 
                         <field
                             name="facility_id"

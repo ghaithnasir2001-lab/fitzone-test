@@ -12,6 +12,10 @@
                 <field name="class_id"/>
                 <field name="class_schedule_id"/>
                 <field name="swimming_slot_id"/>
+                <field name="price"
+                       invisible="booking_type != 'swimming' or price &lt;= 0"/>
+                <field name="invoice_state"
+                       invisible="booking_type != 'swimming' or price &lt;= 0"/>
                 <field name="status"/>
             </list>
         </field>
@@ -22,6 +26,23 @@
         <field name="model">fitzone.booking</field>
         <field name="arch" type="xml">
             <form string="Booking">
+
+                <header>
+                    <button
+                        name="action_create_invoice"
+                        string="Create Invoice"
+                        type="object"
+                        class="btn-primary"
+                        invisible="booking_type != 'swimming' or price &lt;= 0 or invoice_id"
+                    />
+                    <button
+                        name="action_view_invoice"
+                        string="View Invoice"
+                        type="object"
+                        invisible="booking_type != 'swimming' or price &lt;= 0 or not invoice_id"
+                    />
+                </header>
+
                 <sheet>
                     <group>
 
@@ -58,6 +79,26 @@
                             name="physiotherapy_end_datetime"
                             invisible="booking_type != 'physiotherapy'"
                             required="booking_type == 'physiotherapy'"
+                        />
+
+                        <field name="currency_id" invisible="1"/>
+
+                        <field
+                            name="price"
+                            readonly="1"
+                            invisible="booking_type != 'swimming' or price &lt;= 0"
+                        />
+
+                        <field
+                            name="invoice_id"
+                            readonly="1"
+                            invisible="booking_type != 'swimming' or price &lt;= 0"
+                        />
+
+                        <field
+                            name="invoice_state"
+                            readonly="1"
+                            invisible="booking_type != 'swimming' or price &lt;= 0"
                         />
 
                         <field name="status"/>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_rehabilitation_files_report"
+            model="ir.actions.report">
+        <field name="name">Rehabilitation Files Report</field>
+        <field name="model">fitzone.rehab.file</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">fitzone_management.report_rehabilitation_files_document</field>
+        <field name="report_file">fitzone_management.report_rehabilitation_files_document</field>
+        <field name="binding_model_id" ref="model_fitzone_rehab_file"/>
+        <field name="binding_type">report</field>
+        <field name="binding_view_types">list,form</field>
+        <field name="print_report_name">'Rehabilitation File - %s' % (object.name)</field>
+    </record>
+
+    <template id="report_rehabilitation_files_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="rehab">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>FitZone Rehabilitation Files Report</h2>
+
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th>Rehabilitation Reference</th>
+                                    <td><span t-field="rehab.name"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Subscriber</th>
+                                    <td><span t-field="rehab.partner_id"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Injury Reference</th>
+                                    <td><span t-field="rehab.injury_id"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Physiotherapist</th>
+                                    <td>
+                                        <span t-if="rehab.physiotherapist_id"
+                                              t-field="rehab.physiotherapist_id"/>
+                                        <span t-else="">Not Assigned</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Opening Date</th>
+                                    <td><span t-field="rehab.opening_date"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Closing Date</th>
+                                    <td>
+                                        <span t-if="rehab.closing_date"
+                                              t-field="rehab.closing_date"/>
+                                        <span t-else="">Not Closed</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Status</th>
+                                    <td><span t-field="rehab.state"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Diagnosis</th>
+                                    <td><span t-field="rehab.diagnosis"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Rehabilitation Plan</th>
+                                    <td>
+                                        <span t-field="rehab.rehabilitation_plan"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>
