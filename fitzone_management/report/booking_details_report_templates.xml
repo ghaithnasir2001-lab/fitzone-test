@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_booking_details_report" model="ir.actions.report">
+        <field name="name">Booking Details</field>
+        <field name="model">fitzone.booking</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">fitzone_management.report_booking_details_document</field>
+        <field name="report_file">fitzone_management.report_booking_details_document</field>
+        <field name="binding_model_id" ref="model_fitzone_booking"/>
+        <field name="binding_type">report</field>
+        <field name="binding_view_types">form</field>
+        <field name="print_report_name">'Booking - %s' % (object.name)</field>
+    </record>
+
+    <template id="report_booking_details_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="booking">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>FitZone Booking Details</h2>
+
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th>Booking Reference</th>
+                                    <td><span t-field="booking.name"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Booking Type</th>
+                                    <td><span t-field="booking.booking_type"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Subscriber</th>
+                                    <td><span t-field="booking.subscriber_id"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Start Date &amp; Time</th>
+                                    <td><span t-field="booking.start_datetime"/></td>
+                                </tr>
+                                <tr>
+                                    <th>End Date &amp; Time</th>
+                                    <td><span t-field="booking.end_datetime"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Status</th>
+                                    <td><span t-field="booking.status"/></td>
+                                </tr>
+                                <tr t-if="booking.booking_type == 'class'">
+                                    <th>Class</th>
+                                    <td><span t-field="booking.class_id"/></td>
+                                </tr>
+                                <tr t-if="booking.booking_type == 'class'">
+                                    <th>Class Schedule</th>
+                                    <td><span t-field="booking.class_schedule_id"/></td>
+                                </tr>
+                                <tr t-if="booking.booking_type == 'swimming'">
+                                    <th>Swimming Slot</th>
+                                    <td><span t-field="booking.swimming_slot_id"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Booking Price</th>
+                                    <td>
+                                        <span t-field="booking.price"
+                                              t-options="{'widget': 'monetary', 'display_currency': booking.currency_id}"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Invoice Status</th>
+                                    <td>
+                                        <span t-if="booking.invoice_id"
+                                              t-field="booking.invoice_state"/>
+                                        <span t-else="">No Invoice</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

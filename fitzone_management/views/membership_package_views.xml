@@ -118,7 +118,7 @@
 
     <menuitem
         id="menu_fitzone_root"
-        name="FitZone Management"
+        name="FitZone"
         sequence="10"
     />
 

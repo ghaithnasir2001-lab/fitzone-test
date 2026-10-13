@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_membership_details_report" model="ir.actions.report">
+        <field name="name">Membership Details</field>
+        <field name="model">fitzone.membership.subscription</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">fitzone_management.report_membership_details_document</field>
+        <field name="report_file">fitzone_management.report_membership_details_document</field>
+        <field name="binding_model_id" ref="model_fitzone_membership_subscription"/>
+        <field name="binding_type">report</field>
+        <field name="binding_view_types">form</field>
+        <field name="print_report_name">'Membership - %s' % (object.name)</field>
+    </record>
+
+    <template id="report_membership_details_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="membership">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>FitZone Membership Details</h2>
+
+                        <h3>Membership Information</h3>
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th>Membership Number</th>
+                                    <td><span t-field="membership.name"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Subscriber</th>
+                                    <td><span t-field="membership.subscriber_id"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Membership Package</th>
+                                    <td><span t-field="membership.package_id"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Status</th>
+                                    <td><span t-field="membership.status"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Barcode</th>
+                                    <td><span t-field="membership.barcode"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Subscription Date</th>
+                                    <td><span t-field="membership.subscription_date"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Activation Date</th>
+                                    <td><span t-field="membership.activation_date"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Expiration Date</th>
+                                    <td><span t-field="membership.expiration_date"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>Pricing and Payment</h3>
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th>Package Price</th>
+                                    <td>
+                                        <span t-field="membership.price"
+                                              t-options="{'widget': 'monetary', 'display_currency': membership.currency_id}"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Discount</th>
+                                    <td>
+                                        <span t-field="membership.discount"
+                                              t-options="{'widget': 'monetary', 'display_currency': membership.currency_id}"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Final Price</th>
+                                    <td>
+                                        <span t-field="membership.final_price"
+                                              t-options="{'widget': 'monetary', 'display_currency': membership.currency_id}"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Payment Plan</th>
+                                    <td><span t-field="membership.payment_plan"/></td>
+                                </tr>
+                                <tr t-if="membership.payment_plan == 'installments'">
+                                    <th>First Installment</th>
+                                    <td>
+                                        <span t-field="membership.first_installment_amount"
+                                              t-options="{'widget': 'monetary', 'display_currency': membership.currency_id}"/>
+                                    </td>
+                                </tr>
+                                <tr t-if="membership.payment_plan == 'installments'">
+                                    <th>Second Installment Amount</th>
+                                    <td>
+                                        <span t-field="membership.second_installment_amount"
+                                              t-options="{'widget': 'monetary', 'display_currency': membership.currency_id}"/>
+                                    </td>
+                                </tr>
+                                <tr t-if="membership.payment_plan == 'installments'">
+                                    <th>Second Installment Due Date</th>
+                                    <td><span t-field="membership.second_installment_due_date"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Invoice</th>
+                                    <td>
+                                        <span t-if="membership.invoice_id"
+                                              t-field="membership.invoice_id"/>
+                                        <span t-else="">No Invoice</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Payment Access Blocked</th>
+                                    <td>
+                                        <span t-if="membership.payment_access_blocked">Yes</span>
+                                        <span t-else="">No</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>Included Services and Freeze</h3>
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th>Allowed Freeze Days</th>
+                                    <td><span t-field="membership.allowed_freeze_days"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Used Freeze Days</th>
+                                    <td><span t-field="membership.used_freeze_days"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Remaining Freeze Days</th>
+                                    <td><span t-field="membership.remaining_freeze_days"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Included PT Sessions</th>
+                                    <td><span t-field="membership.included_pt_sessions"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Used PT Sessions</th>
+                                    <td><span t-field="membership.used_pt_sessions"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Remaining PT Sessions</th>
+                                    <td><span t-field="membership.remaining_pt_sessions"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Included Physiotherapy Sessions</th>
+                                    <td><span t-field="membership.included_physio_sessions"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Used Physiotherapy Sessions</th>
+                                    <td><span t-field="membership.used_physio_sessions"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Remaining Physiotherapy Sessions</th>
+                                    <td><span t-field="membership.remaining_physio_sessions"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Included Nutrition Consultations</th>
+                                    <td><span t-field="membership.included_nutrition_consultations"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Used Nutrition Consultations</th>
+                                    <td><span t-field="membership.used_nutrition_consultations"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Remaining Nutrition Consultations</th>
+                                    <td><span t-field="membership.remaining_nutrition_consultations"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div t-if="membership.notes">
+                            <h3>Notes</h3>
+                            <p><span t-field="membership.notes"/></p>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>
