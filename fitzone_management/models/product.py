@@ -55,3 +55,9 @@ class ProductTemplate(models.Model):
                 product.is_storable = False
                 product.tracking = 'none'
                 product.use_expiration_date = False
+
+
+    @api.model
+    def _load_pos_data_fields(self, config_id):
+        result = super()._load_pos_data_fields(config_id)
+        return result + ['fitzone_kind', 'product_type']

@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <record id="pricelist_standard_retail" model="product.pricelist">
+        <field name="name">FitZone Standard Retail</field>
+        <field name="currency_id" ref="base.JOD"/>
+        <field name="company_id" ref="base.main_company"/>
+    </record>
+
     <record id="pricelist_member_retail" model="product.pricelist">
         <field name="name">FitZone Member Retail</field>
         <field name="currency_id" ref="base.JOD"/>

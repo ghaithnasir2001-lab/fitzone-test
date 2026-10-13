@@ -100,3 +100,43 @@ class FitZonePosOrder(models.Model):
             self._fitzone_validate_expired_lots()
 
         return super()._process_saved_order(draft)
+
+
+class FitZonePosOrderLine(models.Model):
+    _inherit = 'pos.order.line'
+
+    @api.model
+    def get_existing_lots(self, company_id, config_id, product_id):
+        lots = super().get_existing_lots(company_id, config_id, product_id)
+
+        product = self.env['product.product'].browse(product_id).exists()
+        if not product:
+            return lots
+
+        template = product.product_tmpl_id
+        if (
+            template.fitzone_kind != 'retail'
+            or template.product_type not in ('health', 'supplement')
+        ):
+            return lots
+
+        lot_records = self.env['stock.lot'].sudo().browse(
+            [lot['id'] for lot in lots]
+        )
+        expiration_by_id = {
+            lot.id: fields.Datetime.to_string(lot.expiration_date)
+            if lot.expiration_date else False
+            for lot in lot_records
+        }
+
+        for lot in lots:
+            lot['expiration_date'] = expiration_by_id.get(lot['id'])
+
+        lots.sort(
+            key=lambda lot: (
+                not bool(lot.get('expiration_date')),
+                lot.get('expiration_date') or '',
+                lot.get('name') or '',
+            )
+        )
+        return lots

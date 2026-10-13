@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_config_fitzone_pos" model="pos.config">
+        <field name="name">FitZone POS</field>
+        <field name="company_id" ref="base.main_company"/>
+        <field name="use_pricelist" eval="True"/>
+        <field name="pricelist_id" ref="fitzone_management.pricelist_standard_retail"/>
+        <field name="available_pricelist_ids" eval="[
+            Command.link(ref('fitzone_management.pricelist_standard_retail')),
+            Command.link(ref('fitzone_management.pricelist_member_retail'))
+        ]"/>
+    </record>
+</odoo>
