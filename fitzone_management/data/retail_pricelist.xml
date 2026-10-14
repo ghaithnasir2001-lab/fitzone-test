@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pricelist_standard_retail" model="product.pricelist">
+        <field name="name">FitZone Standard Retail</field>
+        <field name="currency_id" ref="base.JOD"/>
+        <field name="company_id" ref="base.main_company"/>
+    </record>
+
+    <record id="pricelist_member_retail" model="product.pricelist">
+        <field name="name">FitZone Member Retail</field>
+        <field name="currency_id" ref="base.JOD"/>
+        <field name="company_id" ref="base.main_company"/>
+    </record>
+
+    <record id="pricelist_member_health" model="product.pricelist.item">
+        <field name="pricelist_id" ref="fitzone_management.pricelist_member_retail"/>
+        <field name="applied_on">2_product_category</field>
+        <field name="categ_id" ref="fitzone_management.product_category_health"/>
+        <field name="compute_price">percentage</field>
+        <field name="percent_price">50</field>
+    </record>
+
+    <record id="pricelist_member_supplements" model="product.pricelist.item">
+        <field name="pricelist_id" ref="fitzone_management.pricelist_member_retail"/>
+        <field name="applied_on">2_product_category</field>
+        <field name="categ_id" ref="fitzone_management.product_category_supplements"/>
+        <field name="compute_price">percentage</field>
+        <field name="percent_price">50</field>
+    </record>
+</odoo>

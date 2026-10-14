@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_category_health" model="product.category">
+        <field name="name">FitZone Health Products</field>
+        <field name="removal_strategy_id" ref="product_expiry.removal_fefo"/>
+    </record>
+
+    <record id="product_category_supplements" model="product.category">
+        <field name="name">FitZone Supplements</field>
+        <field name="removal_strategy_id" ref="product_expiry.removal_fefo"/>
+    </record>
+
+    <record id="product_category_juices" model="product.category">
+        <field name="name">FitZone Juices</field>
+    </record>
+
+    <record id="product_category_snacks" model="product.category">
+        <field name="name">FitZone Snacks</field>
+    </record>
+</odoo>

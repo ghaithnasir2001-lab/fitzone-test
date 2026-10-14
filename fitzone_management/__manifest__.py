@@ -9,6 +9,10 @@
     'depends': [
         'base',
         'product',
+        'stock',
+        'product_expiry',
+        'purchase',
+        'point_of_sale',
         'hr',
         'mail',
         'account',
@@ -26,6 +30,10 @@
         'data/injury_rehab_sequence.xml',
         'data/membership_email_template.xml',
         'data/payment_sequence.xml',
+        'data/retail_categories.xml',
+        'data/retail_products.xml',
+        'data/retail_pricelist.xml',
+        'data/retail_pos_config.xml',
         'data/equipment_maintenance_sequence.xml',
 
         'views/membership_package_views.xml',
@@ -60,6 +68,10 @@
     'assets': {
         'web.assets_backend': [
             'fitzone_management/static/src/js/checkin_barcode_scanner.js',
+        ],
+        'point_of_sale._assets_pos': [
+            'fitzone_management/static/src/js/pos_pricelist_access.js',
+            'fitzone_management/static/src/js/pos_member_pricelist.js',
         ],
     },
     'installable': True,

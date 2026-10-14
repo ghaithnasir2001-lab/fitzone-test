@@ -43,3 +43,23 @@ class ResPartner(models.Model):
                     raise ValidationError(
                         'A FitZone Subscriber with this email already exists.'
                     )
+
+    fitzone_has_active_membership = fields.Boolean(
+        string='Has Active Membership',
+        compute='_compute_fitzone_has_active_membership',
+    )
+
+    def _compute_fitzone_has_active_membership(self):
+        Membership = self.env['fitzone.membership.subscription']
+        for partner in self:
+            partner.fitzone_has_active_membership = bool(
+                Membership.search_count([
+                    ('subscriber_id', '=', partner.id),
+                    ('status', '=', 'active'),
+                ])
+            )
+
+    @api.model
+    def _load_pos_data_fields(self, config):
+        fields = super()._load_pos_data_fields(config)
+        return fields + ['fitzone_has_active_membership']
