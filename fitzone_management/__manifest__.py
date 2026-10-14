@@ -34,6 +34,8 @@
         'views/checkin_views.xml',
         'views/membership_payment_views.xml',
         'views/equipment_maintenance_views.xml',
+        'report/equipment_supplier_report_templates.xml',
+
 
         'views/facility_views.xml',
         'views/class_views.xml',

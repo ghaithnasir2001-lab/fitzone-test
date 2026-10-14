@@ -326,6 +326,47 @@ class MaintenanceRequest(models.Model):
         ondelete="restrict",
     )
 
+    fitzone_failure_source = fields.Selection(
+        [
+            ("internal", "Internal Malfunction"),
+            ("manufacturing_defect", "Manufacturing Defect"),
+        ],
+        string="Failure Source",
+        tracking=True,
+        copy=False,
+    )
+
+    fitzone_supplier_id = fields.Many2one(
+        "res.partner",
+        string="Supplier",
+        related="equipment_id.partner_id",
+        store=True,
+        readonly=True,
+    )
+
+    fitzone_warranty_status = fields.Selection(
+        [
+            ("valid", "Within Warranty Date"),
+            ("expired", "Warranty Expired"),
+            ("unknown", "Warranty Date Not Set"),
+        ],
+        string="Warranty Status",
+        compute="_compute_fitzone_warranty_status",
+    )
+
+    @api.depends("equipment_id", "equipment_id.warranty_date")
+    def _compute_fitzone_warranty_status(self):
+        today = fields.Date.context_today(self)
+        for request in self:
+            warranty_date = request.equipment_id.warranty_date
+            if not warranty_date:
+                request.fitzone_warranty_status = "unknown"
+            elif warranty_date < today:
+                request.fitzone_warranty_status = "expired"
+            else:
+                request.fitzone_warranty_status = "valid"
+
+
     fitzone_approval_state = fields.Selection(
         [
             ("pending", "Pending Management Approval"),
@@ -472,6 +513,92 @@ class MaintenanceRequest(models.Model):
                 "fitzone_approval_state": "approved",
             })
 
+    def _get_fitzone_stage(self, stage_name):
+        stage = self.env["maintenance.stage"].search(
+            [("name", "=", stage_name)],
+            limit=1,
+        )
+        if not stage:
+            raise UserError(
+                _("The maintenance stage '%s' was not found.") % stage_name
+            )
+        return stage
+
+    def action_fitzone_start_maintenance(self):
+        for request in self:
+            if request.fitzone_approval_state != "approved":
+                raise UserError(
+                    _("Maintenance must be approved before work can begin.")
+                )
+
+            if request.stage_id.name != "New Request":
+                raise UserError(
+                    _("Only new maintenance requests can be started.")
+                )
+
+            request.write({
+                "stage_id": request._get_fitzone_stage("In Progress").id,
+            })
+
+    def action_fitzone_mark_repaired(self):
+        for request in self:
+            if request.fitzone_approval_state != "approved":
+                raise UserError(
+                    _("Maintenance must be approved before it can be completed.")
+                )
+
+            if request.stage_id.name != "In Progress":
+                raise UserError(
+                    _("Only maintenance in progress can be marked as repaired.")
+                )
+
+            request.write({
+                "stage_id": request._get_fitzone_stage("Repaired").id,
+                "close_date": fields.Datetime.now(),
+            })
+
+    def action_fitzone_scrap_equipment(self):
+        if not self.env.user.has_group(MANAGEMENT_GROUP):
+            raise UserError(
+                _("Only FitZone Management can scrap equipment.")
+            )
+
+        scrap_stage = self._get_fitzone_stage("Scrap")
+
+        for request in self:
+            if request.stage_id.name in ("Repaired", "Scrap"):
+                raise UserError(
+                    _("Only unfinished maintenance requests can be scrapped.")
+                )
+
+            request.write({
+                "stage_id": scrap_stage.id,
+                "close_date": fields.Datetime.now(),
+            })
+
+            if request.equipment_id:
+                request.equipment_id.sudo().write({
+                    "fitzone_status": "out_of_service",
+                })
+
+        return True
+
+    def action_fitzone_print_supplier_report(self):
+        self.ensure_one()
+
+        if self.fitzone_failure_source != "manufacturing_defect":
+            raise UserError(
+                _("The supplier report is only available for manufacturing defects.")
+            )
+
+        if not self.fitzone_supplier_id:
+            raise UserError(
+                _("Please set a vendor on the equipment before printing the supplier report.")
+            )
+
+        return self.env.ref(
+            "fitzone_management.action_equipment_supplier_report"
+        ).report_action(self)
 
     def write(self, vals):
         if "fitzone_approval_state" in vals:
