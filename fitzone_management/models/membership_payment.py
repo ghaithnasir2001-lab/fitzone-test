@@ -25,6 +25,7 @@ class FitZoneMembershipInstallment(models.Model):
 
     installment_number = fields.Selection(
         [
+            ('full', 'Full Payment'),
             ('1', 'First Installment'),
             ('2', 'Second Installment'),
         ],

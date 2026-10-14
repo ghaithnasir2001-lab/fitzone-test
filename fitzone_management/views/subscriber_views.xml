@@ -45,7 +45,9 @@
     <menuitem
         id="menu_fitzone_subscribers"
         name="Subscribers"
+        parent="menu_fitzone_root"
         action="action_fitzone_subscribers"
+        sequence="10"
     />
 
 </odoo>

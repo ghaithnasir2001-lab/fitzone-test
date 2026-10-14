@@ -40,10 +40,6 @@
         <field name="view_mode">list,form</field>
     </record>
 
-    <menuitem
-        id="menu_fitzone_root"
-        name="FitZone"
-    />
 
     <menuitem
         id="menu_fitzone_classes_facilities"

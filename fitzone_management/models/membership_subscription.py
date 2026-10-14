@@ -148,7 +148,48 @@ class FitZoneMembershipSubscription(models.Model):
         copy=False,
         ondelete='restrict',
     )
+    full_invoice_amount = fields.Monetary(
+        string='Full Payment Amount',
+        related='invoice_id.amount_total',
+        currency_field='currency_id',
+        readonly=True,
+    )
 
+    full_invoice_paid = fields.Monetary(
+        string='Amount Paid',
+        compute='_compute_full_invoice_paid',
+        currency_field='currency_id',
+        readonly=True,
+    )
+
+    full_invoice_due = fields.Monetary(
+        string='Outstanding Amount',
+        related='invoice_id.amount_residual',
+        currency_field='currency_id',
+        readonly=True,
+    )
+
+    full_invoice_status = fields.Selection(
+        related='invoice_id.payment_state',
+        string='Payment Status',
+        readonly=True,
+    )
+
+    @api.depends(
+        'invoice_id.amount_total',
+        'invoice_id.amount_residual',
+        'invoice_id.state',
+    )
+    def _compute_full_invoice_paid(self):
+        for record in self:
+            invoice = record.invoice_id
+            if invoice and invoice.state == 'posted':
+                record.full_invoice_paid = max(
+                    invoice.amount_total - invoice.amount_residual,
+                    0.0,
+                )
+            else:
+                record.full_invoice_paid = 0.0
     payment_access_blocked = fields.Boolean(
         string='Access Blocked Due to Overdue Payment',
         compute='_compute_payment_access_blocked',
@@ -583,6 +624,14 @@ class FitZoneMembershipSubscription(models.Model):
 
             invoice.action_post()
             subscription.invoice_id = invoice.id
+
+            self.env['fitzone.membership.installment'].create({
+                'subscription_id': subscription.id,
+                'installment_number': 'full',
+                'amount': subscription.final_price,
+                'due_date': subscription.subscription_date,
+                'invoice_id': invoice.id,
+            })
         return True
 
     @api.onchange(
