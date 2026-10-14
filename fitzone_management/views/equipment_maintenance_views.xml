@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- =========================================================
+         EQUIPMENT VIEWS
+    ========================================================== -->
+
+    <record id="view_fitzone_equipment_list" model="ir.ui.view">
+        <field name="name">fitzone.equipment.list</field>
+        <field name="model">maintenance.equipment</field>
+        <field name="arch" type="xml">
+            <list string="FitZone Equipment">
+                <field name="name"/>
+                <field name="category_id"/>
+                <field name="model"/>
+                <field name="serial_no"/>
+                <field name="partner_id"/>
+                <field name="fitzone_status" widget="badge"
+                       decoration-success="fitzone_status == 'fit_for_use'"
+                       decoration-danger="fitzone_status == 'out_of_service'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_fitzone_equipment_form" model="ir.ui.view">
+        <field name="name">fitzone.equipment.form</field>
+        <field name="model">maintenance.equipment</field>
+        <field name="arch" type="xml">
+            <form string="FitZone Equipment">
+                <header>
+                    <button name="action_fitzone_return_to_service"
+                            type="object"
+                            string="Return to Fit for Use"
+                            class="btn-primary"
+                            groups="fitzone_management.group_fitzone_management"
+                            invisible="fitzone_status != 'out_of_service'"/>
+                    <field name="fitzone_status" widget="statusbar"
+                           statusbar_visible="fit_for_use,out_of_service"
+                           readonly="1"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="category_id"/>
+                            <field name="model"/>
+                            <field name="serial_no"/>
+                        </group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="partner_ref"/>
+                            <field name="assign_date"/>
+                            <field name="warranty_date"/>
+                            <field name="cost"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Notes">
+                            <field name="note"/>
+                        </page>
+
+                        <page string="Maintenance History">
+                            <field name="maintenance_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="maintenance_type"/>
+                                    <field name="maintenance_team_id"/>
+                                    <field name="user_id"/>
+                                    <field name="schedule_date"/>
+                                    <field name="fitzone_estimated_cost"/>
+                                    <field name="fitzone_estimated_hours"/>
+                                    <field name="fitzone_actual_hours"/>
+                                    <field name="stage_id"/>
+                                    <field name="close_date"/>
+                                </list>
+                            </field>
+                        </page>
+
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_fitzone_equipment" model="ir.actions.act_window">
+        <field name="name">Equipment</field>
+        <field name="res_model">maintenance.equipment</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_fitzone_equipment_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_fitzone_equipment_form')})
+        ]"/>
+    </record>
+
+    <!-- =========================================================
+         MALFUNCTION REPORTING VIEWS
+    ========================================================== -->
+
+    <record id="view_fitzone_equipment_malfunction_list" model="ir.ui.view">
+        <field name="name">fitzone.equipment.malfunction.list</field>
+        <field name="model">fitzone.equipment.malfunction</field>
+        <field name="arch" type="xml">
+            <list string="Equipment Malfunctions"
+                  decoration-warning="approval_state == 'pending'"
+                  decoration-success="approval_state == 'approved'"
+                  decoration-danger="approval_state == 'rejected'">
+                <field name="name"/>
+                <field name="equipment_id"/>
+                <field name="reported_date"/>
+                <field name="reported_by"/>
+                <field name="approval_state" widget="badge"/>
+                <field name="maintenance_request_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_fitzone_equipment_malfunction_form" model="ir.ui.view">
+        <field name="name">fitzone.equipment.malfunction.form</field>
+        <field name="model">fitzone.equipment.malfunction</field>
+        <field name="arch" type="xml">
+            <form string="Equipment Malfunction">
+                <header>
+                    <button name="action_approve"
+                            type="object"
+                            string="Approve and Create Repair"
+                            class="btn-primary"
+                            groups="fitzone_management.group_fitzone_management"
+                            invisible="approval_state != 'pending'"/>
+                    <button name="action_reject"
+                            type="object"
+                            string="Reject"
+                            groups="fitzone_management.group_fitzone_management"
+                            invisible="approval_state != 'pending'"/>
+                    <field name="approval_state" widget="statusbar"
+                           statusbar_visible="pending,approved,rejected"
+                           readonly="1"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name" readonly="1"/>
+                            <field name="equipment_id"
+                                   readonly="approval_state != 'pending'"/>
+                            <field name="reported_by" readonly="1"/>
+                            <field name="reported_date" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="maintenance_request_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="description"
+                               readonly="approval_state != 'pending'"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_fitzone_equipment_malfunction" model="ir.actions.act_window">
+        <field name="name">Report Equipment Malfunction</field>
+        <field name="res_model">fitzone.equipment.malfunction</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_fitzone_equipment_malfunction_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_fitzone_equipment_malfunction_form')})
+        ]"/>
+    </record>
+
+    <!-- =========================================================
+         MAINTENANCE REQUEST VIEWS
+    ========================================================== -->
+
+    <record id="view_fitzone_maintenance_request_list" model="ir.ui.view">
+        <field name="name">fitzone.maintenance.request.list</field>
+        <field name="model">maintenance.request</field>
+        <field name="arch" type="xml">
+            <list string="FitZone Maintenance Requests"
+                  decoration-warning="fitzone_approval_state == 'pending'">
+                <field name="name"/>
+                <field name="equipment_id"/>
+                <field name="maintenance_type"/>
+                <field name="fitzone_malfunction_id"/>
+                <field name="maintenance_team_id"/>
+                <field name="user_id"/>
+                <field name="schedule_date"/>
+                <field name="schedule_end"/>
+                <field name="fitzone_estimated_cost"/>
+                <field name="fitzone_estimated_hours"/>
+                <field name="fitzone_actual_hours"/>
+                <field name="fitzone_approval_state" widget="badge"/>
+                <field name="stage_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_fitzone_maintenance_request_form" model="ir.ui.view">
+        <field name="name">fitzone.maintenance.request.form</field>
+        <field name="model">maintenance.request</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <form string="FitZone Maintenance Request">
+                <header>
+                    <button name="action_approve_fitzone_maintenance"
+                            type="object"
+                            string="Approve Preventive Maintenance"
+                            class="btn-primary"
+                            groups="fitzone_management.group_fitzone_management"
+                            invisible="maintenance_type != 'preventive' or fitzone_approval_state != 'pending'"/>
+
+                    <button name="action_fitzone_scrap_equipment"
+                            type="object"
+                            string="Scrap Equipment"
+                            class="btn-secondary"
+                            groups="fitzone_management.group_fitzone_management"
+                            invisible="stage_id == 3 or stage_id == 4"/>
+
+                    <button name="action_fitzone_start_maintenance"
+                            type="object"
+                            string="Start Maintenance"
+                            class="btn-primary"
+                            invisible="fitzone_approval_state != 'approved' or stage_id != 1"/>
+
+                    <button name="action_fitzone_mark_repaired"
+                            type="object"
+                            string="Mark as Repaired"
+                            class="btn-primary"
+                            invisible="fitzone_approval_state != 'approved' or stage_id != 2"/>
+
+                    <button name="action_fitzone_print_supplier_report"
+                            type="object"
+                            string="Print Supplier Report"
+                            class="btn-secondary"
+                            icon="fa-file-pdf-o"
+                            invisible="fitzone_failure_source != 'manufacturing_defect'"/>
+
+                    <field name="fitzone_approval_state" invisible="1"/>
+                    <field name="fitzone_approval_state" widget="statusbar"
+                           statusbar_visible="pending,approved"
+                           readonly="1"/>
+                    <field name="stage_id" widget="statusbar" readonly="1"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="equipment_id"/>
+                            <field name="maintenance_type"/>
+                            <field name="fitzone_malfunction_id" readonly="1"/>
+                            <field name="maintenance_team_id"/>
+                            <field name="user_id"/>
+                            <field name="priority" widget="priority"/>
+                        </group>
+                        <group>
+                            <field name="request_date"/>
+                            <field name="schedule_date"/>
+                            <field name="schedule_end"/>
+                            <field name="duration" readonly="1"/>
+                            <field name="close_date" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Technical Diagnosis and Warranty">
+                        <group>
+                            <field name="fitzone_failure_source"/>
+                            <field name="fitzone_supplier_id"
+                                invisible="fitzone_failure_source != 'manufacturing_defect'"/>
+                        </group>
+                        <group>
+                            <field name="fitzone_warranty_status"
+                                widget="badge"
+                                decoration-success="fitzone_warranty_status == 'valid'"
+                                decoration-danger="fitzone_warranty_status == 'expired'"
+                                decoration-warning="fitzone_warranty_status == 'unknown'"/>
+                        </group>
+                    </group>
+
+                    <div class="alert alert-danger"
+                        role="alert"
+                        invisible="fitzone_warranty_status != 'expired'">
+                        <strong>Warranty Expired:</strong>
+                        The equipment warranty expiration date has passed.
+                        Contact the supplier to confirm whether any claim can be considered.
+                    </div>
+
+                    <div class="alert alert-warning"
+                        role="alert"
+                        invisible="fitzone_warranty_status != 'unknown'">
+                        <strong>Warranty Date Missing:</strong>
+                        No warranty expiration date is recorded for this equipment.
+                    </div>
+
+                    <group string="Cost and Work">
+                        <group>
+                            <field name="fitzone_estimated_cost"/>
+                            <field name="fitzone_estimated_hours"/>
+                            <field name="fitzone_actual_hours"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Description">
+                            <field name="description"/>
+                        </page>
+                        <page string="Preventive Recurrence"
+                              invisible="maintenance_type != 'preventive'">
+                            <group>
+                                <field name="recurring_maintenance"/>
+                                <field name="repeat_interval"
+                                       invisible="not recurring_maintenance"/>
+                                <field name="repeat_unit"
+                                       invisible="not recurring_maintenance"/>
+                                <field name="repeat_type"
+                                       invisible="not recurring_maintenance"/>
+                                <field name="repeat_until"
+                                       invisible="not recurring_maintenance or repeat_type != 'until'"/>
+                            </group>
+                            <div class="text-muted">
+                                For quarterly maintenance, set Repeat Every to 3 and Repeat Unit to Months.
+                            </div>
+                        </page>
+                        <page string="Instructions">
+                            <field name="instruction_type"/>
+                            <field name="instruction_text"
+                                   invisible="instruction_type != 'text'"/>
+                            <field name="instruction_pdf"
+                                   invisible="instruction_type != 'pdf'"/>
+                            <field name="instruction_google_slide"
+                                   invisible="instruction_type != 'google_slide'"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_fitzone_maintenance_requests" model="ir.actions.act_window">
+        <field name="name">Maintenance Requests</field>
+        <field name="res_model">maintenance.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_fitzone_maintenance_request_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_fitzone_maintenance_request_form')})
+        ]"/>
+    </record>
+
+    <!-- =========================================================
+         FITZONE MENUS
+    ========================================================== -->
+
+    <menuitem id="menu_fitzone_maintenance_root"
+              name="Equipment Maintenance"
+              parent="fitzone_management.menu_fitzone_root"
+              sequence="80"
+              groups="base.group_user"/>
+
+    <menuitem id="menu_fitzone_equipment"
+              name="Equipment"
+              parent="menu_fitzone_maintenance_root"
+              action="action_fitzone_equipment"
+              sequence="10"
+              groups="base.group_user"/>
+
+    <menuitem id="menu_fitzone_equipment_malfunctions"
+              name="Report Malfunction"
+              parent="menu_fitzone_maintenance_root"
+              action="action_fitzone_equipment_malfunction"
+              sequence="20"
+              groups="base.group_user"/>
+
+    <menuitem id="menu_fitzone_maintenance_requests"
+              name="Maintenance Requests"
+              parent="menu_fitzone_maintenance_root"
+              action="action_fitzone_maintenance_requests"
+              sequence="30"
+              groups="fitzone_management.group_fitzone_management,fitzone_management.group_fitzone_maintenance"/>
+
+</odoo>

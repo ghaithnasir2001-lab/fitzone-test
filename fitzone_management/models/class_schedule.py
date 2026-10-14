@@ -18,6 +18,12 @@ class FitZoneClassSchedule(models.Model):
         string='Class',
         required=True
     )
+    trainer_id = fields.Many2one(
+        'fitzone.trainer',
+        string='Trainer',
+        required=True,
+        ondelete='restrict'
+    )
 
     class_type = fields.Selection(
         related='class_id.class_type',

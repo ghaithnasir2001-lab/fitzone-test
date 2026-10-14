@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_equipment_supplier_report" model="ir.actions.report">
+        <field name="name">Equipment Supplier Report</field>
+        <field name="model">maintenance.request</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">fitzone_management.report_equipment_supplier_document</field>
+        <field name="report_file">fitzone_management.report_equipment_supplier_document</field>
+        <field name="binding_model_id" ref="maintenance.model_maintenance_request"/>
+        <field name="binding_type">report</field>
+        <field name="binding_view_types">form</field>
+        <field name="print_report_name">'Supplier Report - %s' % (object.name)</field>
+    </record>
+
+    <template id="report_equipment_supplier_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="request">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>FitZone Equipment Supplier Report</h2>
+
+                        <p>
+                            This report documents an equipment malfunction
+                            identified as a manufacturing defect. Warranty
+                            coverage must be confirmed with the supplier.
+                        </p>
+
+                        <h3>Maintenance Request</h3>
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th>Request Reference</th>
+                                    <td><span t-field="request.name"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Request Date</th>
+                                    <td><span t-field="request.request_date"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Maintenance Stage</th>
+                                    <td><span t-field="request.stage_id"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Technician</th>
+                                    <td>
+                                        <span t-if="request.user_id"
+                                              t-field="request.user_id"/>
+                                        <span t-else="">Not Assigned</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>Equipment Details</h3>
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th>Equipment</th>
+                                    <td><span t-field="request.equipment_id"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Serial Number</th>
+                                    <td>
+                                        <span t-if="request.equipment_id.serial_no"
+                                              t-field="request.equipment_id.serial_no"/>
+                                        <span t-else="">Not Recorded</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Supplier</th>
+                                    <td><span t-field="request.fitzone_supplier_id"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Warranty Expiration Date</th>
+                                    <td>
+                                        <span t-if="request.equipment_id.warranty_date"
+                                              t-field="request.equipment_id.warranty_date"/>
+                                        <span t-else="">Not Recorded</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Warranty Status</th>
+                                    <td>
+                                        <span t-field="request.fitzone_warranty_status"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>Technical Diagnosis</h3>
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th>Failure Source</th>
+                                    <td>
+                                        <span t-field="request.fitzone_failure_source"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Reported Malfunction</th>
+                                    <td>
+                                        <span t-if="request.fitzone_malfunction_id"
+                                              t-field="request.fitzone_malfunction_id.name"/>
+                                        <span t-else="">Not Linked</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Malfunction Description</th>
+                                    <td>
+                                        <span t-if="request.fitzone_malfunction_id"
+                                              t-field="request.fitzone_malfunction_id.description"/>
+                                        <span t-else="">No linked malfunction description</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Maintenance Description</th>
+                                    <td>
+                                        <span t-if="request.description"
+                                              t-field="request.description"/>
+                                        <span t-else="">Not Recorded</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Estimated Maintenance Cost</th>
+                                    <td>
+                                        <span t-field="request.fitzone_estimated_cost"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p class="text-muted mt-4">
+                            Prepared by FitZone for supplier review.
+                            A valid warranty date does not by itself confirm
+                            that the reported defect is covered.
+                        </p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

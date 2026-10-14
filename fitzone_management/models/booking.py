@@ -1,5 +1,6 @@
+
 from odoo import api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 
 
 class FitZoneBooking(models.Model):
@@ -78,6 +79,177 @@ class FitZoneBooking(models.Model):
         required=True
     )
 
+    # Booking Price and Invoice
+
+    company_id = fields.Many2one(
+        'res.company',
+        string='Company',
+        required=True,
+        default=lambda self: self.env.company
+    )
+
+    currency_id = fields.Many2one(
+        related='company_id.currency_id',
+        string='Currency',
+        readonly=True
+    )
+
+    price = fields.Monetary(
+        string='Booking Price',
+        currency_field='currency_id',
+        default=0.0,
+        readonly=True
+    )
+
+    invoice_id = fields.Many2one(
+        'account.move',
+        string='Customer Invoice',
+        readonly=True,
+        copy=False,
+        ondelete='restrict'
+    )
+
+    invoice_state = fields.Selection(
+        related='invoice_id.state',
+        string='Invoice Status',
+        readonly=True
+    )
+
+    @api.onchange('booking_type', 'swimming_slot_id')
+    def _onchange_booking_price(self):
+        for record in self:
+            if (
+                record.booking_type == 'swimming'
+                and record.swimming_slot_id
+            ):
+                record.price = record.swimming_slot_id.price
+            else:
+                record.price = 0.0
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('booking_type') == 'swimming':
+                slot = self.env['fitzone.swimming.slot'].browse(
+                    vals.get('swimming_slot_id')
+                )
+                vals['price'] = (
+                    slot.price if slot.exists() else 0.0
+                )
+            else:
+                vals['price'] = 0.0
+
+        return super().create(vals_list)
+
+    def write(self, vals):
+        result = super().write(vals)
+
+        if 'booking_type' in vals or 'swimming_slot_id' in vals:
+            for record in self:
+                if (
+                    record.booking_type == 'swimming'
+                    and record.swimming_slot_id
+                ):
+                    new_price = record.swimming_slot_id.price
+                else:
+                    new_price = 0.0
+
+                super(FitZoneBooking, record).write({
+                    'price': new_price
+                })
+
+        return result
+    def action_create_invoice(self):
+        self.ensure_one()
+
+        if self.booking_type != 'swimming' or self.price <= 0:
+            raise UserError(
+                'Invoices can only be created for paid swimming bookings.'
+            )
+
+        if self.invoice_id:
+            raise UserError(
+                'An invoice already exists for this booking.'
+            )
+
+        if not self.subscriber_id:
+            raise UserError(
+                'Please select a subscriber before creating the invoice.'
+            )
+
+        company = self.company_id
+
+        # Find a sales income account for this company.
+        income_account = self.env['account.account'].search([
+            ('company_ids', 'in', company.id),
+            ('account_type', 'in', ['income', 'income_other']),
+        ], limit=1)
+
+        if not income_account:
+            raise UserError(
+                'No income account was found for this company. '
+                'Please configure the chart of accounts first.'
+            )
+
+        # Find the 16% sales tax for this company.
+        sales_tax = self.env['account.tax'].search([
+            ('company_id', '=', company.id),
+            ('type_tax_use', '=', 'sale'),
+            ('amount', '=', 16.0),
+            ('amount_type', '=', 'percent'),
+            ('active', '=', True),
+        ], limit=1)
+
+        if not sales_tax:
+            raise UserError(
+                'The 16% sales tax was not found for this company. '
+                'Please configure the sales tax before creating the invoice.'
+            )
+
+        # The booking price includes 16% tax.
+        price_without_tax = self.price / 1.16
+
+        invoice = self.env['account.move'].with_company(company).create({
+            'move_type': 'out_invoice',
+            'partner_id': self.subscriber_id.id,
+            'company_id': company.id,
+            'invoice_origin': self.name,
+            'invoice_line_ids': [
+                fields.Command.create({
+                    'name': f'Swimming Booking - {self.name}',
+                    'quantity': 1,
+                    'price_unit': price_without_tax,
+                    'account_id': income_account.id,
+                    'tax_ids': [fields.Command.set([sales_tax.id])],
+                }),
+            ],
+        })
+
+        self.invoice_id = invoice.id
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Customer Invoice',
+            'res_model': 'account.move',
+            'view_mode': 'form',
+            'res_id': invoice.id,
+            'target': 'current',
+        }
+
+    def action_view_invoice(self):
+        self.ensure_one()
+
+        if not self.invoice_id:
+            raise UserError('There is no invoice linked to this booking.')
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Customer Invoice',
+            'res_model': 'account.move',
+            'view_mode': 'form',
+            'res_id': self.invoice_id.id,
+            'target': 'current',
+        }
     @api.depends(
         'booking_type',
         'class_schedule_id.start_datetime',
@@ -366,3 +538,50 @@ class FitZoneBooking(models.Model):
                     raise ValidationError(
                         'This swimming slot is full. No more bookings can be confirmed.'
                     )
+
+    @api.constrains(
+        'subscriber_id', 'start_datetime', 'end_datetime', 'status'
+    )
+    def _check_subscriber_appointment_overlap(self):
+        for record in self:
+            if record.status == 'cancelled':
+                continue
+            if not record.subscriber_id or not record.start_datetime or not record.end_datetime:
+                continue
+
+            same_model_domain = [
+                ('id', '!=', record.id),
+                ('subscriber_id', '=', record.subscriber_id.id),
+                ('status', '!=', 'cancelled'),
+                ('start_datetime', '<', record.end_datetime),
+                ('end_datetime', '>', record.start_datetime),
+            ]
+
+            if self.search_count(same_model_domain, limit=1):
+                raise ValidationError(
+                    'This subscriber already has another booking during this time.'
+                )
+
+            overlap_domain = [
+                ('subscriber_id', '=', record.subscriber_id.id),
+                ('state', '!=', 'cancelled'),
+                ('start_datetime', '<', record.end_datetime),
+                ('end_datetime', '>', record.start_datetime),
+            ]
+
+            if self.env['fitzone.trainer.booking'].search_count(
+                overlap_domain, limit=1
+            ):
+                raise ValidationError(
+                    'This subscriber already has another booking during this time.'
+                )
+
+            if self.env['fitzone.nutrition.consultation'].search_count([
+                ('subscriber_id', '=', record.subscriber_id.id),
+                ('state', '!=', 'cancelled'),
+                ('start_datetime', '<', record.end_datetime),
+                ('end_datetime', '>', record.start_datetime),
+            ], limit=1):
+                raise ValidationError(
+                    'This subscriber already has another booking during this time.'
+                )

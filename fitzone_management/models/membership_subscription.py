@@ -148,7 +148,48 @@ class FitZoneMembershipSubscription(models.Model):
         copy=False,
         ondelete='restrict',
     )
+    full_invoice_amount = fields.Monetary(
+        string='Full Payment Amount',
+        related='invoice_id.amount_total',
+        currency_field='currency_id',
+        readonly=True,
+    )
 
+    full_invoice_paid = fields.Monetary(
+        string='Amount Paid',
+        compute='_compute_full_invoice_paid',
+        currency_field='currency_id',
+        readonly=True,
+    )
+
+    full_invoice_due = fields.Monetary(
+        string='Outstanding Amount',
+        related='invoice_id.amount_residual',
+        currency_field='currency_id',
+        readonly=True,
+    )
+
+    full_invoice_status = fields.Selection(
+        related='invoice_id.payment_state',
+        string='Payment Status',
+        readonly=True,
+    )
+
+    @api.depends(
+        'invoice_id.amount_total',
+        'invoice_id.amount_residual',
+        'invoice_id.state',
+    )
+    def _compute_full_invoice_paid(self):
+        for record in self:
+            invoice = record.invoice_id
+            if invoice and invoice.state == 'posted':
+                record.full_invoice_paid = max(
+                    invoice.amount_total - invoice.amount_residual,
+                    0.0,
+                )
+            else:
+                record.full_invoice_paid = 0.0
     payment_access_blocked = fields.Boolean(
         string='Access Blocked Due to Overdue Payment',
         compute='_compute_payment_access_blocked',
@@ -235,6 +276,13 @@ class FitZoneMembershipSubscription(models.Model):
         string='Included Nutrition Consultations',
         related='package_id.included_nutrition_consultations',
         store=True,
+        readonly=True,
+    )
+
+    treatment_ids = fields.One2many(
+        'fitzone.treatment',
+        'subscription_id',
+        string='Physiotherapy Treatments',
         readonly=True,
     )
 
@@ -576,6 +624,14 @@ class FitZoneMembershipSubscription(models.Model):
 
             invoice.action_post()
             subscription.invoice_id = invoice.id
+
+            self.env['fitzone.membership.installment'].create({
+                'subscription_id': subscription.id,
+                'installment_number': 'full',
+                'amount': subscription.final_price,
+                'due_date': subscription.subscription_date,
+                'invoice_id': invoice.id,
+            })
         return True
 
     @api.onchange(
@@ -737,7 +793,6 @@ class FitZoneMembershipSubscription(models.Model):
             period_start,
             time.min,
         )
-
         end_datetime = datetime.combine(
             period_end,
             time.max,
@@ -745,31 +800,11 @@ class FitZoneMembershipSubscription(models.Model):
 
         return self.env['fitzone.treatment'].sudo().search_count(
             [
-                (
-                    'rehab_file_id.partner_id',
-                    '=',
-                    self.subscriber_id.id,
-                ),
-                (
-                    'state',
-                    '=',
-                    'completed',
-                ),
-                (
-                    'booking_id.booking_type',
-                    '=',
-                    'physiotherapy',
-                ),
-                (
-                    'booking_id.start_datetime',
-                    '>=',
-                    start_datetime,
-                ),
-                (
-                    'booking_id.start_datetime',
-                    '<=',
-                    end_datetime,
-                ),
+                ('subscription_id', '=', self.id),
+                ('state', '=', 'completed'),
+                ('booking_id.booking_type', '=', 'physiotherapy'),
+                ('booking_id.start_datetime', '>=', start_datetime),
+                ('booking_id.start_datetime', '<=', end_datetime),
             ]
         )
 
@@ -779,6 +814,11 @@ class FitZoneMembershipSubscription(models.Model):
         'activation_date',
         'expiration_date',
         'status',
+        'treatment_ids',
+        'treatment_ids.state',
+        'treatment_ids.booking_id',
+        'treatment_ids.booking_id.start_datetime',
+        'treatment_ids.booking_id.booking_type',
     )
     def _compute_used_physio_sessions(self):
 
@@ -824,13 +864,17 @@ class FitZoneMembershipSubscription(models.Model):
     @api.depends(
         'nutrition_consultation_ids',
         'nutrition_consultation_ids.uses_included_consultation',
+        'nutrition_consultation_ids.state',
     )
     def _compute_used_nutrition_consultations(self):
         for record in self:
             record.used_nutrition_consultations = sum(
                 1
                 for consultation in record.nutrition_consultation_ids
-                if consultation.uses_included_consultation
+                if (
+                    consultation.uses_included_consultation
+                    and consultation.state == 'completed'
+                )
             )
 
 

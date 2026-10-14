@@ -46,6 +46,9 @@
                                 <list>
                                     <field name="name"/>
                                     <field name="consultation_date"/>
+                                    <field name="start_datetime" required="state != 'cancelled'"/>
+                                    <field name="end_datetime" required="state != 'cancelled'"/>
+                                    <field name="state"/>
                                     <field name="nutritionist_id"/>
                                     <field name="subscription_id"/>
                                     <field name="uses_included_consultation"/>
@@ -72,9 +75,12 @@
                 <field name="program_id"/>
                 <field name="subscription_id"/>
                 <field name="uses_included_consultation"/>
+                <field name="state"/>
                 <field name="consultation_price"/>
                 <field name="nutritionist_id"/>
                 <field name="consultation_date"/>
+                <field name="start_datetime" required="state != 'cancelled'"/>
+                <field name="end_datetime" required="state != 'cancelled'"/>
                 <field name="invoice_id"/>
                 <field name="invoice_payment_state"/>
             </list>
@@ -88,6 +94,21 @@
         <field name="arch" type="xml">
             <form>
                 <header>
+                    <button
+                        name="action_mark_completed"
+                        type="object"
+                        string="Mark Completed"
+                        class="btn-primary"
+                        invisible="state != 'scheduled'"
+                    />
+                    <button
+                        name="action_cancel"
+                        type="object"
+                        string="Cancel"
+                        invisible="state != 'scheduled'"
+                    />
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="scheduled,completed,cancelled"/>
                     <button
                         name="action_create_invoice"
                         type="object"
@@ -107,6 +128,8 @@
                         <group>
                             <field name="nutritionist_id"/>
                             <field name="consultation_date"/>
+                            <field name="start_datetime" required="state != 'cancelled'"/>
+                            <field name="end_datetime" required="state != 'cancelled'"/>
                         </group>
                     </group>
 
@@ -145,13 +168,29 @@
         <field name="arch" type="xml">
             <xpath expr="//form" position="inside">
                 <app name="fitzone_nutrition_settings"
-                     string="FitZone Nutrition">
+                     string="FitZone">
                     <block title="Nutrition Consultations">
                         <setting
                             id="fitzone_nutrition_consultation_price"
                             string="Nutrition Consultation Price"
                             help="Default price charged for a paid nutrition consultation.">
                             <field name="nutrition_consultation_price"/>
+                        </setting>
+                    </block>
+                    <block title="Personal Training">
+                        <setting
+                            id="fitzone_trainer_pt_session_price"
+                            string="Extra PT Session Price"
+                            help="Default price charged for an extra personal training session.">
+                            <field name="trainer_pt_session_price"/>
+                        </setting>
+                    </block>
+                    <block title="Physiotherapy">
+                        <setting
+                            id="fitzone_physio_session_price"
+                            string="Extra Physiotherapy Session Price"
+                            help="Price charged for each physiotherapy session not covered by the membership.">
+                            <field name="physio_session_price"/>
                         </setting>
                     </block>
                 </app>
@@ -238,9 +277,12 @@
                                 <field name="program_id"/>
                                 <field name="subscription_id"/>
                                 <field name="uses_included_consultation"/>
+                                <field name="state"/>
                                 <field name="consultation_price"/>
                                 <field name="nutritionist_id"/>
                                 <field name="consultation_date"/>
+                                <field name="start_datetime" required="state != 'cancelled'"/>
+                                <field name="end_datetime" required="state != 'cancelled'"/>
                                 <field name="invoice_id"/>
                                 <field name="invoice_payment_state"/>
                             </list>
@@ -254,10 +296,11 @@
 
     <menuitem
         id="menu_fitzone_nutrition_configuration"
-        name="Nutrition Configuration"
-        parent="menu_fitzone_nutrition_root"
+        name="Configuration"
+        parent="fitzone_management.menu_fitzone_root"
         action="action_fitzone_nutrition_configuration"
-        sequence="30"
+        sequence="70"
+        groups="fitzone_management.group_fitzone_management"
     />
 
 </odoo>

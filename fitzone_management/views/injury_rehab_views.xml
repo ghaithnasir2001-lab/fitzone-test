@@ -190,6 +190,9 @@
                 <field name="physiotherapist_id"/>
                 <field name="booking_id"/>
                 <field name="treatment_type"/>
+                <field name="session_type"/>
+                <field name="session_price"/>
+                <field name="invoice_id"/>
                 <field name="duration_minutes"/>
                 <field name="state"/>
             </list>
@@ -203,6 +206,11 @@
         <field name="arch" type="xml">
             <form>
                 <header>
+                    <button name="action_create_invoice"
+                            string="Create Invoice"
+                            type="object"
+                            invisible="state != 'scheduled' or session_type != 'paid_extra' or invoice_id"/>
+
                     <button name="action_complete"
                             string="Complete"
                             type="object"
@@ -236,7 +244,12 @@
                             <field name="rehab_file_id"/>
                             <field name="physiotherapist_id"
                                    domain="[('fitzone_staff_type', '=', 'physiotherapist')]"/>
-                            <field name="booking_id"/>
+                            <field name="booking_id"
+                                   domain="[('booking_type', '=', 'physiotherapy')]"/>
+                            <field name="subscription_id" readonly="1"/>
+                            <field name="session_type"/>
+                            <field name="session_price" readonly="1"/>
+                            <field name="invoice_id" readonly="1"/>
                         </group>
 
                         <group>

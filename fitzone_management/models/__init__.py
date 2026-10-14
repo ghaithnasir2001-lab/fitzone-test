@@ -3,6 +3,7 @@ from . import fitzone_class
 from . import class_schedule
 from . import swimming_slot
 from . import hr_employee
+from . import management_dashboard
 from . import booking
 from . import subscriber
 from . import health_assessment
@@ -23,3 +24,4 @@ from . import membership_payment
 from . import nutrition
 from . import product
 from . import pos_order
+from . import equipment_maintenance

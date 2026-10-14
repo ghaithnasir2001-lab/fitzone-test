@@ -16,6 +16,7 @@
         'hr',
         'mail',
         'account',
+        'maintenance',
     ],
     'data': [
         'security/fitzone_groups.xml',
@@ -33,12 +34,16 @@
         'data/retail_products.xml',
         'data/retail_pricelist.xml',
         'data/retail_pos_config.xml',
+        'data/equipment_maintenance_sequence.xml',
 
         'views/membership_package_views.xml',
         'views/membership_subscription_views.xml',
         'views/membership_freeze_views.xml',
         'views/checkin_views.xml',
         'views/membership_payment_views.xml',
+        'views/equipment_maintenance_views.xml',
+        'report/equipment_supplier_report_templates.xml',
+
 
         'views/facility_views.xml',
         'views/class_views.xml',
@@ -46,9 +51,14 @@
         'views/swimming_slot_views.xml',
         'views/hr_employee_views.xml',
         'views/booking_views.xml',
+        'report/booking_details_report_templates.xml',
+        'report/membership_details_report_templates.xml',
+        'report/injury_rehab_report_templates.xml',
+        'report/rehabilitation_files_report_templates.xml',
         'views/subscriber_views.xml',
         'views/health_views.xml',
         'views/injury_rehab_views.xml',
+        'views/management_dashboard_views.xml',
         'views/trainer_views.xml',
 
         'data/booking_sequence.xml',
