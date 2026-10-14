@@ -39,6 +39,43 @@ class FitZoneTrainerBooking(models.Model):
         domain="[('subscriber_id', '=', subscriber_id)]",
     )
 
+    currency_id = fields.Many2one(
+        related="membership_id.currency_id",
+        readonly=True,
+    )
+
+    session_type = fields.Selection(
+        [
+            ("included", "Included Session"),
+            ("paid_extra", "Paid Extra Session"),
+        ],
+        string="Session Type",
+        required=True,
+        default="included",
+    )
+
+    session_price = fields.Monetary(
+        string="Extra Session Price",
+        currency_field="currency_id",
+        readonly=True,
+        copy=False,
+        default=0.0,
+    )
+
+    invoice_id = fields.Many2one(
+        "account.move",
+        string="Customer Invoice",
+        readonly=True,
+        copy=False,
+        ondelete="restrict",
+    )
+
+    invoice_payment_state = fields.Selection(
+        related="invoice_id.payment_state",
+        string="Invoice Payment Status",
+        readonly=True,
+    )
+
     start_datetime = fields.Datetime(
         string="Start Time",
         required=True,
@@ -53,6 +90,7 @@ class FitZoneTrainerBooking(models.Model):
         [
             ("draft", "Draft"),
             ("confirmed", "Confirmed"),
+            ("attended", "Attended"),
             ("cancelled", "Cancelled"),
         ],
         string="Status",
@@ -66,13 +104,14 @@ class FitZoneTrainerBooking(models.Model):
         "trainer_id",
         "subscriber_id",
         "membership_id",
+        "session_type",
         "start_datetime",
         "end_datetime",
         "state",
     )
     def _check_trainer_booking(self):
         for booking in self:
-            if booking.state == "cancelled":
+            if booking.state in ("cancelled", "attended"):
                 continue
 
             if not booking.start_datetime or not booking.end_datetime:
@@ -88,7 +127,8 @@ class FitZoneTrainerBooking(models.Model):
                     "This trainer is not available for booking."
                 )
 
-            booking._check_membership()
+            if booking.state in ("draft", "confirmed"):
+                booking._check_membership()
             booking._check_booking_conflict()
             booking._check_subscriber_conflict()
             booking._check_trainer_availability()
@@ -112,9 +152,33 @@ class FitZoneTrainerBooking(models.Model):
                     "The membership must be active."
                 )
 
-            if membership.remaining_pt_sessions <= 0:
+            booking_date = fields.Datetime.to_datetime(
+                booking.start_datetime
+            ).date()
+
+            if (
+                membership.activation_date
+                and booking_date < membership.activation_date
+            ):
                 raise ValidationError(
-                    "This membership has no remaining personal training sessions."
+                    "The booking date is before the membership activation date."
+                )
+
+            if (
+                membership.expiration_date
+                and booking_date > membership.expiration_date
+            ):
+                raise ValidationError(
+                    "The booking date is after the membership expiration date."
+                )
+
+            if (
+                booking.session_type == "included"
+                and membership.remaining_pt_sessions <= 0
+            ):
+                raise ValidationError(
+                    "No included PT sessions remain. "
+                    "Select Paid Extra Session instead."
                 )
 
     def _check_booking_conflict(self):
@@ -167,6 +231,24 @@ class FitZoneTrainerBooking(models.Model):
             )
 
             if conflicting_booking:
+                raise ValidationError(
+                    "This subscriber already has another booking during this time."
+                )
+
+            # Check conflicts with nutrition consultations.
+            conflicting_consultation = self.env[
+                "fitzone.nutrition.consultation"
+            ].search(
+                [
+                    ("subscriber_id", "=", booking.subscriber_id.id),
+                    ("state", "!=", "cancelled"),
+                    ("start_datetime", "<", booking.end_datetime),
+                    ("end_datetime", ">", booking.start_datetime),
+                ],
+                limit=1,
+            )
+
+            if conflicting_consultation:
                 raise ValidationError(
                     "This subscriber already has another booking during this time."
                 )
@@ -234,27 +316,149 @@ class FitZoneTrainerBooking(models.Model):
 
     def action_confirm(self):
         for booking in self:
-
             if booking.state != "draft":
                 continue
+
+            if booking.session_type == "paid_extra":
+                price = float(
+                    booking.env["ir.config_parameter"].sudo().get_param(
+                        "fitzone_management.trainer_pt_session_price",
+                        default=0.0,
+                    )
+                )
+                if price <= 0:
+                    raise ValidationError(
+                        "The manager must configure an extra PT session "
+                        "price greater than zero in FitZone settings."
+                    )
+                booking.session_price = price
 
             booking._check_membership()
             booking._check_booking_conflict()
             booking._check_subscriber_conflict()
             booking._check_trainer_availability()
-
-            booking.membership_id.used_pt_sessions += 1
             booking.state = "confirmed"
 
         return True
 
+    def action_mark_attended(self):
+        for booking in self:
+            if booking.state != "confirmed":
+                raise ValidationError(
+                    "Only confirmed bookings can be marked as attended."
+                )
+
+            # Attendance can only be recorded after the booked session ends.
+            if fields.Datetime.to_datetime(
+                booking.end_datetime
+            ) > fields.Datetime.now():
+                raise ValidationError(
+                    "A booking cannot be marked attended before its end time."
+                )
+
+            # Validate the membership at attendance.
+            booking._check_membership()
+
+            if booking.session_type == "included":
+                booking.membership_id.used_pt_sessions += 1
+            else:
+                if not booking.invoice_id:
+                    raise ValidationError(
+                        "Create an invoice for the paid extra session "
+                        "before marking it as attended."
+                    )
+
+            booking.state = "attended"
+
+        return True
+
+    def action_create_invoice(self):
+        self.ensure_one()
+
+        if self.session_type != "paid_extra":
+            raise ValidationError(
+                "Only paid extra sessions require an invoice."
+            )
+
+        if self.state != "confirmed":
+            raise ValidationError(
+                "Confirm the booking before creating its invoice."
+            )
+
+        if self.invoice_id:
+            raise ValidationError(
+                "An invoice already exists for this session."
+            )
+
+        if self.session_price <= 0:
+            raise ValidationError(
+                "The extra PT session price must be greater than zero."
+            )
+
+        company = self.env.company
+
+        income_account = self.env["account.account"].search([
+            ("company_ids", "in", [company.id]),
+            ("account_type", "in", ["income", "income_other"]),
+        ], limit=1)
+
+        if not income_account:
+            raise ValidationError(
+                "No income account is configured for this company."
+            )
+
+        tax = self.env["account.tax"].search([
+            ("company_id", "=", company.id),
+            ("type_tax_use", "=", "sale"),
+            ("amount", "=", 16.0),
+            ("active", "=", True),
+        ], limit=1)
+
+        if not tax:
+            raise ValidationError(
+                "The active 16% sales tax was not found for this company."
+            )
+
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.subscriber_id.id,
+            "company_id": company.id,
+            "invoice_date": fields.Date.context_today(self),
+            "invoice_line_ids": [
+                fields.Command.create({
+                    "name": f"{self.name} - Extra Personal Training Session",
+                    "quantity": 1.0,
+                    # The configured session price includes 16% tax.
+                    "price_unit": self.session_price / 1.16,
+                    "account_id": income_account.id,
+                    "tax_ids": [fields.Command.set([tax.id])],
+                }),
+            ],
+        })
+
+        invoice.action_post()
+        self.invoice_id = invoice.id
+
+        return {
+            "type": "ir.actions.act_window",
+            "name": "PT Session Invoice",
+            "res_model": "account.move",
+            "res_id": invoice.id,
+            "view_mode": "form",
+            "target": "current",
+        }
+
     def action_cancel(self):
         for booking in self:
+            if booking.state == "attended":
+                raise ValidationError(
+                    "An attended booking cannot be cancelled."
+                )
 
-            if booking.state == "confirmed":
-                if booking.membership_id.used_pt_sessions > 0:
-                    booking.membership_id.used_pt_sessions -= 1
+            if booking.state == "cancelled":
+                continue
 
+            # Cancellation does not consume or refund a session.
             booking.state = "cancelled"
 
         return True

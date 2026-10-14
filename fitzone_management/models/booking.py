@@ -538,3 +538,50 @@ class FitZoneBooking(models.Model):
                     raise ValidationError(
                         'This swimming slot is full. No more bookings can be confirmed.'
                     )
+
+    @api.constrains(
+        'subscriber_id', 'start_datetime', 'end_datetime', 'status'
+    )
+    def _check_subscriber_appointment_overlap(self):
+        for record in self:
+            if record.status == 'cancelled':
+                continue
+            if not record.subscriber_id or not record.start_datetime or not record.end_datetime:
+                continue
+
+            same_model_domain = [
+                ('id', '!=', record.id),
+                ('subscriber_id', '=', record.subscriber_id.id),
+                ('status', '!=', 'cancelled'),
+                ('start_datetime', '<', record.end_datetime),
+                ('end_datetime', '>', record.start_datetime),
+            ]
+
+            if self.search_count(same_model_domain, limit=1):
+                raise ValidationError(
+                    'This subscriber already has another booking during this time.'
+                )
+
+            overlap_domain = [
+                ('subscriber_id', '=', record.subscriber_id.id),
+                ('state', '!=', 'cancelled'),
+                ('start_datetime', '<', record.end_datetime),
+                ('end_datetime', '>', record.start_datetime),
+            ]
+
+            if self.env['fitzone.trainer.booking'].search_count(
+                overlap_domain, limit=1
+            ):
+                raise ValidationError(
+                    'This subscriber already has another booking during this time.'
+                )
+
+            if self.env['fitzone.nutrition.consultation'].search_count([
+                ('subscriber_id', '=', record.subscriber_id.id),
+                ('state', '!=', 'cancelled'),
+                ('start_datetime', '<', record.end_datetime),
+                ('end_datetime', '>', record.start_datetime),
+            ], limit=1):
+                raise ValidationError(
+                    'This subscriber already has another booking during this time.'
+                )
