@@ -22,3 +22,4 @@ from . import checkin
 from . import mail_server
 from . import membership_payment
 from . import nutrition
+from . import equipment_maintenance
