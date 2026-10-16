@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="access_fitzone_client_import_management" model="ir.model.access">
+        <field name="name">access_fitzone_client_import_management</field>
+        <field name="model_id" ref="model_fitzone_client_import"/>
+        <field name="group_id" ref="group_fitzone_management"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+    <record id="access_fitzone_client_import_admin" model="ir.model.access">
+        <field name="name">access_fitzone_client_import_admin</field>
+        <field name="model_id" ref="model_fitzone_client_import"/>
+        <field name="group_id" ref="base.group_system"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="view_fitzone_client_import_form" model="ir.ui.view">
+        <field name="name">fitzone.client.import.form</field>
+        <field name="model">fitzone.client.import</field>
+        <field name="arch" type="xml">
+            <form string="Import Client Data">
+                <p class="text-muted">
+                    Upload the import-ready client files (the numbered CSV files, or one ZIP with all of them).
+                    They are imported in the right order through Odoo's standard importer.
+                    Importing the same files again updates the records instead of duplicating them.
+                </p>
+                <field name="done" invisible="1"/>
+                <field name="file_ids" widget="many2many_binary" invisible="done"/>
+                <field name="result" invisible="not result" class="font-monospace"/>
+                <footer>
+                    <button name="action_import" type="object" string="Import" class="btn-primary" invisible="done"/>
+                    <button string="Close" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_fitzone_client_import" model="ir.actions.act_window">
+        <field name="name">Import Client Data</field>
+        <field name="res_model">fitzone.client.import</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <!-- Listed in the dashboard's gear (Actions) menu, for Management and Admin only. -->
+        <field name="binding_model_id" ref="model_fitzone_management_dashboard"/>
+        <field name="binding_view_types">form</field>
+        <field name="group_ids" eval="[(4, ref('group_fitzone_management')), (4, ref('base.group_system'))]"/>
+    </record>
+
+</odoo>

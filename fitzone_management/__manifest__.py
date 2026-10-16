@@ -17,6 +17,7 @@
         'mail',
         'account',
         'maintenance',
+        'base_import',
     ],
     'data': [
         'security/fitzone_groups.xml',
@@ -59,6 +60,7 @@
         'views/health_views.xml',
         'views/injury_rehab_views.xml',
         'views/management_dashboard_views.xml',
+        'views/client_import_views.xml',
         'views/trainer_views.xml',
 
         'data/booking_sequence.xml',

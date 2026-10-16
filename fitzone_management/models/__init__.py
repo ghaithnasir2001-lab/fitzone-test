@@ -25,3 +25,4 @@ from . import nutrition
 from . import product
 from . import pos_order
 from . import equipment_maintenance
+from . import client_import
